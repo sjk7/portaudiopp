@@ -8,4 +8,6 @@ the audio callback. At least for this reason, please use the packaged portaudio 
 
 This means you have to build and reference the portaudio included with this project, not your system one.
 
+I developed this using VSCode on Linux Mint 19.
+
 
