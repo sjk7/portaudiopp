@@ -7,6 +7,7 @@ include(CTest)
 enable_testing()
 
 add_executable(tdd main.cpp)
+include_directories(${CMAKE_SOURCE_DIR}/../include)
 
 # ubuntu: sudo apt-get install portaudio19-dev
 
