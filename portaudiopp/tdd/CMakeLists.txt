@@ -5,6 +5,7 @@ project(tdd VERSION 0.1.0)
 
 include(CTest)
 enable_testing()
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_executable(tdd main.cpp)
 include_directories(${CMAKE_SOURCE_DIR}/../include)

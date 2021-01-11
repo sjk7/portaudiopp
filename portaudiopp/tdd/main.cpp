@@ -87,12 +87,12 @@ void test_simple_play()
 
     struct mysine_t : public portaudio::AudioCallback
     {
-        unsigned long n = 0;
+        uint64_t n = 0;
         virtual portaudio::CallbackResult
-        onCallback(portaudio::CallbackInfo info) noexcept
+        onCallback(portaudio::CallbackInfo info) noexcept override
         {
-            float *out = (float *)info.output;
-            for (unsigned long i = 0; i < info.frameCount; i++, n++)
+            auto *out = (float *)(info.output);
+            for (uint64_t i = 0; i < info.frameCount; i++, n++)
             {
                 float v = sin(440 * 2 * M_PI * n / 44100);
                 *out++ = v;

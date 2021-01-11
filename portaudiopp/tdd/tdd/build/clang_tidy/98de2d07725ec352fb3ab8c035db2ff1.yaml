@@ -1,0 +1,303 @@
+---
+MainSourceFile:  '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+Diagnostics:     
+  - DiagnosticName:  modernize-use-noexcept
+    Message:         'dynamic exception specification '''' is deprecated; consider using ''noexcept'' instead'
+    FileOffset:      0
+    FilePath:        ''
+    Replacements:    
+  - DiagnosticName:  llvm-header-guard
+    Message:         header is missing header guard
+    FileOffset:      0
+    FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+    Replacements:    
+      - FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+        Offset:          0
+        Length:          0
+        ReplacementText: '#ifndef PORTAUDIOPLUSPLUS_HPP
+#define PORTAUDIOPLUSPLUS_HPP
+
+'
+      - FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+        Offset:          9487
+        Length:          0
+        ReplacementText: '
+#endif
+'
+  - DiagnosticName:  modernize-deprecated-headers
+    Message:         'inclusion of deprecated C++ header ''math.h''; consider using ''cmath'' instead'
+    FileOffset:      209
+    FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+    Replacements:    
+      - FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+        Offset:          209
+        Length:          8
+        ReplacementText: '<cmath>'
+  - DiagnosticName:  google-runtime-references
+    Message:         'non-const reference parameter ''stream'', make it const or use a pointer'
+    FileOffset:      452
+    FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+    Replacements:    
+  - DiagnosticName:  misc-unused-parameters
+    Message:         'parameter ''stream'' is unused'
+    FileOffset:      452
+    FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+    Replacements:    
+      - FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+        Offset:          452
+        Length:          6
+        ReplacementText: ' /*stream*/'
+  - DiagnosticName:  google-runtime-int
+    Message:         'consider replacing ''long'' with ''int64'''
+    FileOffset:      606
+    FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+    Replacements:    
+  - DiagnosticName:  cppcoreguidelines-pro-type-member-init
+    Message:         'constructor does not initialize these fields: m_stream, m_str'
+    FileOffset:      1287
+    FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+    Replacements:    
+      - FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+        Offset:          719
+        Length:          0
+        ReplacementText: '{}'
+      - FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+        Offset:          742
+        Length:          0
+        ReplacementText: '{}'
+  - DiagnosticName:  google-explicit-constructor
+    Message:         single-argument constructors must be marked explicit to avoid unintentional implicit conversions
+    FileOffset:      1287
+    FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+    Replacements:    
+      - FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+        Offset:          1287
+        Length:          0
+        ReplacementText: 'explicit '
+  - DiagnosticName:  cppcoreguidelines-pro-type-member-init
+    Message:         'constructor does not initialize these fields: m_stream, m_str'
+    FileOffset:      1482
+    FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+    Replacements:    
+      - FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+        Offset:          719
+        Length:          0
+        ReplacementText: '{}'
+      - FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+        Offset:          742
+        Length:          0
+        ReplacementText: '{}'
+  - DiagnosticName:  google-explicit-constructor
+    Message:         constructors that are callable with a single argument must be marked explicit to avoid unintentional implicit conversions
+    FileOffset:      1482
+    FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+    Replacements:    
+      - FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+        Offset:          1482
+        Length:          0
+        ReplacementText: 'explicit '
+  - DiagnosticName:  google-runtime-int
+    Message:         'consider replacing ''unsigned long'' with ''uint64'''
+    FileOffset:      2170
+    FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+    Replacements:    
+  - DiagnosticName:  google-runtime-int
+    Message:         'consider replacing ''unsigned long'' with ''uint64'''
+    FileOffset:      2592
+    FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+    Replacements:    
+  - DiagnosticName:  hicpp-special-member-functions
+    Message:         'class ''AudioCallback'' defines a non-default destructor but does not define a copy constructor, a copy assignment operator, a move constructor or a move assignment operator'
+    FileOffset:      3238
+    FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+    Replacements:    
+  - DiagnosticName:  hicpp-use-equals-default
+    Message:         'use ''= default'' to define a trivial destructor'
+    FileOffset:      3339
+    FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+    Replacements:    
+      - FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+        Offset:          3365
+        Length:          2
+        ReplacementText: '= default;'
+  - DiagnosticName:  hicpp-special-member-functions
+    Message:         'class ''Portaudio'' defines a non-default destructor but does not define a copy constructor, a copy assignment operator, a move constructor or a move assignment operator'
+    FileOffset:      6018
+    FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+    Replacements:    
+  - DiagnosticName:  hicpp-member-init
+    Message:         'constructor does not initialize these fields: m_id, m_apis'
+    FileOffset:      6034
+    FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+    Replacements:    
+      - FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+        Offset:          7991
+        Length:          0
+        ReplacementText: '{}'
+      - FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+        Offset:          8023
+        Length:          0
+        ReplacementText: '{}'
+  - DiagnosticName:  google-explicit-constructor
+    Message:         single-argument constructors must be marked explicit to avoid unintentional implicit conversions
+    FileOffset:      6034
+    FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+    Replacements:    
+      - FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+        Offset:          6034
+        Length:          0
+        ReplacementText: 'explicit '
+  - DiagnosticName:  misc-unused-parameters
+    Message:         'parameter ''id'' is unused'
+    FileOffset:      6067
+    FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+    Replacements:    
+      - FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+        Offset:          6067
+        Length:          2
+        ReplacementText: ' /*id*/'
+  - DiagnosticName:  cppcoreguidelines-pro-bounds-array-to-pointer-decay
+    Message:         'do not implicitly decay an array into a pointer; consider using gsl::array_view or an explicit cast instead'
+    FileOffset:      7210
+    FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+    Replacements:    
+  - DiagnosticName:  readability-implicit-bool-conversion
+    Message:         'implicit conversion ''std::PaStream *'' (aka ''void *'') -> bool'
+    FileOffset:      7309
+    FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+    Replacements:    
+      - FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+        Offset:          7308
+        Length:          1
+        ReplacementText: ''
+      - FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+        Offset:          7317
+        Length:          0
+        ReplacementText: ' == nullptr'
+  - DiagnosticName:  readability-implicit-bool-conversion
+    Message:         'implicit conversion ''int'' -> bool'
+    FileOffset:      7505
+    FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+    Replacements:    
+      - FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+        Offset:          7508
+        Length:          0
+        ReplacementText: ' != 0'
+  - DiagnosticName:  cppcoreguidelines-pro-bounds-array-to-pointer-decay
+    Message:         'do not implicitly decay an array into a pointer; consider using gsl::array_view or an explicit cast instead'
+    FileOffset:      7655
+    FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+    Replacements:    
+  - DiagnosticName:  hicpp-no-array-decay
+    Message:         'do not implicitly decay an array into a pointer; consider using gsl::array_view or an explicit cast instead'
+    FileOffset:      7826
+    FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+    Replacements:    
+  - DiagnosticName:  google-runtime-int
+    Message:         'consider replacing ''unsigned long'' with ''uint64'''
+    FileOffset:      8128
+    FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+    Replacements:    
+  - DiagnosticName:  google-runtime-int
+    Message:         'consider replacing ''unsigned long'' with ''uint64'''
+    FileOffset:      8478
+    FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+    Replacements:    
+  - DiagnosticName:  cppcoreguidelines-pro-bounds-array-to-pointer-decay
+    Message:         'do not implicitly decay an array into a pointer; consider using gsl::array_view or an explicit cast instead'
+    FileOffset:      8587
+    FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+    Replacements:    
+  - DiagnosticName:  misc-unused-parameters
+    Message:         'parameter ''input'' is unused'
+    FileOffset:      8829
+    FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+    Replacements:    
+      - FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+        Offset:          8817
+        Length:          19
+        ReplacementText: ''
+  - DiagnosticName:  misc-unused-parameters
+    Message:         'parameter ''output'' is unused'
+    FileOffset:      8842
+    FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+    Replacements:    
+      - FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+        Offset:          8836
+        Length:          14
+        ReplacementText: ''
+  - DiagnosticName:  google-runtime-int
+    Message:         'consider replacing ''unsigned long'' with ''uint64'''
+    FileOffset:      8850
+    FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+    Replacements:    
+  - DiagnosticName:  misc-unused-parameters
+    Message:         'parameter ''frameCount'' is unused'
+    FileOffset:      8864
+    FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+    Replacements:    
+      - FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+        Offset:          8850
+        Length:          37
+        ReplacementText: ''
+  - DiagnosticName:  misc-unused-parameters
+    Message:         'parameter ''timeInfo'' is unused'
+    FileOffset:      8919
+    FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+    Replacements:    
+      - FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+        Offset:          8887
+        Length:          53
+        ReplacementText: ''
+  - DiagnosticName:  misc-unused-parameters
+    Message:         'parameter ''statusFlags'' is unused'
+    FileOffset:      8962
+    FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+    Replacements:    
+      - FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+        Offset:          8940
+        Length:          35
+        ReplacementText: ''
+  - DiagnosticName:  fuchsia-overloaded-operator
+    Message:         'cannot overload ''operator()'''
+    FileOffset:      8989
+    FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+    Replacements:    
+  - DiagnosticName:  hicpp-use-auto
+    Message:         use auto when initializing with a cast to avoid duplicating the type name
+    FileOffset:      9005
+    FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+    Replacements:    
+      - FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+        Offset:          9005
+        Length:          9
+        ReplacementText: auto
+  - DiagnosticName:  google-readability-casting
+    Message:         'C-style casts are discouraged; use static_cast'
+    FileOffset:      9020
+    FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+    Replacements:    
+      - FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+        Offset:          9020
+        Length:          13
+        ReplacementText: 'static_cast<Portaudio *>('
+      - FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+        Offset:          9041
+        Length:          0
+        ReplacementText: ')'
+  - DiagnosticName:  cppcoreguidelines-pro-type-cstyle-cast
+    Message:         do not use C-style cast to convert between unrelated types
+    FileOffset:      9020
+    FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+    Replacements:    
+  - DiagnosticName:  hicpp-no-array-decay
+    Message:         'do not implicitly decay an array into a pointer; consider using gsl::array_view or an explicit cast instead'
+    FileOffset:      9055
+    FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/include/portaudioplusplus.hpp'
+    Replacements:    
+  - DiagnosticName:  clang-diagnostic-error
+    Message:         '''stddef.h'' file not found'
+    FileOffset:      1092
+    FilePath:        /usr/include/string.h
+    Replacements:    
+...

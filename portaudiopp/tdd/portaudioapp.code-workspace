@@ -85,6 +85,8 @@
 			"ios": "cpp",
 			"locale": "cpp",
 			"queue": "cpp"
-		}
+		},
+		"clangtidy.buildPath": "${workspaceFolder}/tdd/build",
+		"clangtidy.sourcePath": "${workspaceFolder}/tdd"
 	}
 }

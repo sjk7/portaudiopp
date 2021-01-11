@@ -1,0 +1,63 @@
+---
+MainSourceFile:  '/home/steve/Documents/portAudio++/portaudiopp/tdd/main.cpp'
+Diagnostics:     
+  - DiagnosticName:  clang-diagnostic-error
+    Message:         '''portaudioplusplus.hpp'' file not found'
+    FileOffset:      9
+    FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/tdd/main.cpp'
+    Replacements:    
+  - DiagnosticName:  misc-unused-parameters
+    Message:         'parameter ''list'' is unused'
+    FileOffset:      392
+    FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/tdd/main.cpp'
+    Replacements:    
+      - FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/tdd/main.cpp'
+        Offset:          392
+        Length:          4
+        ReplacementText: ' /*list*/'
+  - DiagnosticName:  misc-unused-parameters
+    Message:         'parameter ''list'' is unused'
+    FileOffset:      558
+    FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/tdd/main.cpp'
+    Replacements:    
+      - FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/tdd/main.cpp'
+        Offset:          558
+        Length:          4
+        ReplacementText: ' /*list*/'
+  - DiagnosticName:  misc-unused-parameters
+    Message:         'parameter ''list'' is unused'
+    FileOffset:      731
+    FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/tdd/main.cpp'
+    Replacements:    
+      - FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/tdd/main.cpp'
+        Offset:          731
+        Length:          4
+        ReplacementText: ' /*list*/'
+  - DiagnosticName:  google-runtime-int
+    Message:         'consider replacing ''unsigned long'' with ''uint64'''
+    FileOffset:      2047
+    FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/tdd/main.cpp'
+    Replacements:    
+  - DiagnosticName:  misc-unused-parameters
+    Message:         'parameter ''info'' is unused'
+    FileOffset:      2153
+    FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/tdd/main.cpp'
+    Replacements:    
+      - FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/tdd/main.cpp'
+        Offset:          2129
+        Length:          28
+        ReplacementText: ''
+  - DiagnosticName:  readability-named-parameter
+    Message:         all parameters should be named in a function
+    FileOffset:      3740
+    FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/tdd/main.cpp'
+    Replacements:    
+      - FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/tdd/main.cpp'
+        Offset:          3740
+        Length:          0
+        ReplacementText: ' /*unused*/'
+      - FilePath:        '/home/steve/Documents/portAudio++/portaudiopp/tdd/main.cpp'
+        Offset:          3749
+        Length:          0
+        ReplacementText: ' /*unused*/'
+...

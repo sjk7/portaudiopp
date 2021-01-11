@@ -13,7 +13,8 @@
             "configurationProvider": "ms-vscode.cmake-tools",
             "compilerArgs": [
                 "-std=c++17"
-            ]
+            ],
+            "compileCommands": "/home/steve/Documents/portAudio++/portaudiopp/tdd/build/compile_commands.json"
         }
     ],
     "version": 4

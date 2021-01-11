@@ -283,7 +283,6 @@ struct Portaudio
         m_nframes = 0;
         m_CurrentTimeSeconds = 0;
     }
-
     PaTime elapsedSeconds() const noexcept
     {
         assert(m_stream && m_streamInfo.sampleRate);
