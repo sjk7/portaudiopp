@@ -72,8 +72,20 @@ class Exception : public std::runtime_error
     PaError errorCode() const noexcept { return m_errcode; }
 };
 
-using hostApiList = std::vector<const PaHostApiInfo *>;
-using deviceList = std::vector<const PaDeviceInfo *>;
+struct PaDeviceInfoEx
+{
+    const PaDeviceInfo *info = nullptr;
+    int device_index = -1;
+};
+
+struct PaHostApiInfoEx
+{
+    const PaHostApiInfo *info = nullptr;
+    int api_index = -1;
+};
+
+using hostApiList = std::vector<PaHostApiInfoEx>;
+using deviceList = std::vector<PaDeviceInfoEx>;
 
 using apiDeviceList = std::unordered_map<std::string, deviceList>;
 struct CallbackInfo
@@ -126,7 +138,8 @@ static inline hostApiList enum_apis()
     for (int i = 0; i < cnt; ++i)
     {
         auto inf = Pa_GetHostApiInfo(i);
-        list.push_back(inf);
+        PaHostApiInfoEx d{inf, i};
+        list.push_back(d);
     }
     return list;
 }
@@ -136,7 +149,8 @@ static inline deviceList enum_devices()
     for (int i = 0; i < Pa_GetDeviceCount(); ++i)
     {
         auto inf = Pa_GetDeviceInfo(i);
-        list.push_back(inf);
+        PaDeviceInfoEx d{inf, i};
+        list.push_back(d);
     }
     return list;
 }
@@ -181,17 +195,18 @@ struct enumerator_t
 
         for (const auto api : apis)
         {
-            auto it = retval.find(api->name);
+            auto it = retval.find(api.info->name);
             if (it == retval.end())
             {
-                auto pr = retval.insert({std::string(api->name), deviceList{}});
+                auto pr =
+                    retval.insert({std::string(api.info->name), deviceList{}});
                 it = pr.first;
             }
         }
 
         for (const auto &d : devices)
         {
-            const auto api = Pa_GetHostApiInfo(d->hostApi);
+            const auto api = Pa_GetHostApiInfo(d.info->hostApi);
             auto pr = retval.find(api->name);
             pr->second.push_back(d);
         }
@@ -199,10 +214,11 @@ struct enumerator_t
         return retval;
     }
 
-    const PaDeviceInfo *default_device() const noexcept
+    const PaDeviceInfoEx default_device() const noexcept
     {
         const auto idx = Pa_GetDefaultOutputDevice();
-        return Pa_GetDeviceInfo(idx);
+        PaDeviceInfoEx retval{Pa_GetDeviceInfo(idx), idx};
+        return retval;
     }
 
   private:
@@ -230,12 +246,14 @@ struct StreamSetupInfo
     int inputChannelCount = 2;
     int outputChannelCount = 2;
     PaSampleFormat sampleFormat = SampleFormat::Float32;
-    double sampleRate = 44100;
+    double samplerate = 44100;
     unsigned long framesPerBuffer = 512;
     void *userData = {nullptr};
     const PaStreamParameters *inParams = {nullptr};
     const PaStreamParameters *outParams = {nullptr};
     PaStreamFlags flags = {0};
+    PaTime inputLatency = {0};
+    PaTime outputLatency = {0};
 };
 
 namespace detail
@@ -302,6 +320,7 @@ template <typename AUDIOCALLBACK> class Stream : public detail::TimeStampGen
 {
   private:
     StreamSetupInfo m_info;
+    std::atomic<int> m_runstate;
 
     static inline int
     callback_dispatcher(const void *input, void *output,
@@ -341,6 +360,29 @@ template <typename AUDIOCALLBACK> class Stream : public detail::TimeStampGen
     }
 
     Stream &&operator=(Stream &&rhs) = delete;
+    const bool isRunning() const { return m_runstate > 0; }
+
+    StreamSetupInfo actualStreamInfo()
+    {
+        if (!m_info.stream)
+        {
+            throw Exception(-1, "actualStreamInfo() may only be called if "
+                                "there is a valid and active stream");
+        }
+        auto stream = m_info.stream;
+        auto painfo = Pa_GetStreamInfo(stream);
+        if (painfo == nullptr)
+        {
+            throw Exception(-1, "actualStreamInfo(): Unexpected: unable to "
+                                "retrieve stream info");
+        }
+
+        StreamSetupInfo ret = m_info;
+        ret.inputLatency = painfo->inputLatency;
+        ret.outputLatency = painfo->outputLatency;
+        ret.samplerate = painfo->sampleRate;
+        return ret;
+    }
 
     void openDefault()
     {
@@ -348,7 +390,7 @@ template <typename AUDIOCALLBACK> class Stream : public detail::TimeStampGen
 
         int err = Pa_OpenDefaultStream(
             &info.stream, info.inputChannelCount, info.outputChannelCount,
-            info.sampleFormat, info.sampleRate, info.framesPerBuffer,
+            info.sampleFormat, info.samplerate, info.framesPerBuffer,
             callback_dispatcher, (void *)this);
 
         if (err)
@@ -356,7 +398,9 @@ template <typename AUDIOCALLBACK> class Stream : public detail::TimeStampGen
             throw Exception(err, "Failed to openDefaultStream()");
         }
         m_info = info;
-        TimeStampGen::reset(info.sampleRate);
+        m_info = actualStreamInfo();
+
+        TimeStampGen::reset(info.samplerate);
     }
 
     void openDefault(StreamSetupInfo &info)
@@ -364,7 +408,7 @@ template <typename AUDIOCALLBACK> class Stream : public detail::TimeStampGen
 
         int err = Pa_OpenDefaultStream(
             &info.stream, info.inputChannelCount, info.outputChannelCount,
-            info.sampleFormat, info.sampleRate, info.framesPerBuffer,
+            info.sampleFormat, info.samplerate, info.framesPerBuffer,
             callback_dispatcher, (void *)this);
 
         if (err)
@@ -372,7 +416,9 @@ template <typename AUDIOCALLBACK> class Stream : public detail::TimeStampGen
             throw Exception(err, "Failed to openDefaultStream()");
         }
         m_info = info;
-        TimeStampGen::reset(info.sampleRate);
+        m_info = actualStreamInfo();
+
+        TimeStampGen::reset(info.samplerate);
     }
 
     void openSpecific(StreamSetupInfo &info)
@@ -380,7 +426,7 @@ template <typename AUDIOCALLBACK> class Stream : public detail::TimeStampGen
 
         const auto err =
             Pa_OpenStream(&info.stream, info.inParams, info.outParams,
-                          info.sampleRate, info.framesPerBuffer, info.flags,
+                          info.samplerate, info.framesPerBuffer, info.flags,
                           callback_dispatcher, (void *)this);
 
         if (err)
@@ -388,12 +434,14 @@ template <typename AUDIOCALLBACK> class Stream : public detail::TimeStampGen
             throw Exception(err, "Failed to openSpecificStream()");
         }
         m_info = info;
-        TimeStampGen::reset(info.sampleRate);
+        m_info = actualStreamInfo();
+
+        TimeStampGen::reset(info.samplerate);
     }
 
     void Stop()
     {
-        TimeStampGen::reset(m_info.sampleRate);
+        TimeStampGen::reset(m_info.samplerate);
         if (!m_info.stream)
         {
             throw Exception(-1, "Stop(): unexpected: no stream to start");
@@ -403,11 +451,12 @@ template <typename AUDIOCALLBACK> class Stream : public detail::TimeStampGen
         {
             throw Exception(ret, "Error Stopping Stream");
         }
+        m_runstate = 0;
     }
 
     void Start()
     {
-        TimeStampGen::reset(m_info.sampleRate);
+        TimeStampGen::reset(m_info.samplerate);
         if (!m_info.stream)
         {
             throw Exception(-1, "Start(): unexpected: no stream to start");
@@ -417,6 +466,7 @@ template <typename AUDIOCALLBACK> class Stream : public detail::TimeStampGen
         {
             throw Exception(ret, "Error Starting Stream");
         }
+        m_runstate = 1;
     }
 
     void Close()
@@ -441,6 +491,18 @@ template <typename AUDIOCALLBACK> class Stream : public detail::TimeStampGen
 class Portaudio
 {
   public:
+    auto streamParamsDefault(PaDeviceInfoEx *device = nullptr)
+    {
+        PaStreamParameters params = {0};
+        params.channelCount = 2;
+        if (device == nullptr)
+            params.device = enumerator().default_device().device_index;
+        else
+            params.device = device->device_index;
+
+        params.sampleFormat = SampleFormat::Float32;
+        return params;
+    }
     Portaudio(const std::string_view id = "")
         : info(*Pa_GetVersionInfo()), m_id(id)
     {
@@ -461,11 +523,18 @@ class Portaudio
     const enumerator_t &enumerator() const noexcept { return m_enum; }
     std::string_view id() const noexcept { return m_id; }
 
-    template <typename CALLBACK>
-    Stream<CALLBACK> openDefaultStream(CALLBACK &&cb)
+    template <typename CALLBACK> auto openDefaultStream(CALLBACK &&cb)
     {
         Stream<CALLBACK> s(std::forward<CALLBACK>(cb));
         s.openDefault();
+        return std::move(s);
+    }
+
+    template <typename CALLBACK>
+    auto openStream(StreamSetupInfo &info, CALLBACK &&cb)
+    {
+        Stream<CALLBACK> s(std::forward<CALLBACK>(cb));
+        s.openSpecific(info);
         return std::move(s);
     }
 

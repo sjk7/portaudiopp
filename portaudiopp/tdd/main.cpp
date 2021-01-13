@@ -20,7 +20,7 @@ void print_apis(const portaudio::hostApiList &list)
     puts("\napis:");
     for (const auto &api : list)
     {
-        puts(api->name);
+        puts(api.info->name);
     }
     puts("\n");
 }
@@ -30,7 +30,7 @@ void print_devices(const portaudio::deviceList &list)
     puts("devices:");
     for (const auto &d : list)
     {
-        puts(d->name);
+        puts(d.info->name);
     }
     puts("\n");
 }
@@ -48,7 +48,7 @@ void print_devices_by_api(const portaudio::apiDeviceList &list)
         }
         for (const auto &d : pr.second)
         {
-            puts(d->name);
+            puts(d.info->name);
         }
         puts("\n");
     }
@@ -62,6 +62,16 @@ void test_enum()
     assert(!apis.empty());
     auto devs = pa::enum_devices();
     assert(!devs.empty());
+
+    for (const auto &d : devs)
+    {
+        assert(d.device_index >= 0); // forgot to index device correctly
+    }
+
+    for (const auto &api : apis)
+    {
+        assert(api.api_index >= 0); // forgot to index apis correctly
+    }
 
     print_apis(apis);
     print_devices(devs);
@@ -79,41 +89,52 @@ void test_enumerator()
     }
 }
 
-static inline float next_sine_sample(uint64_t sample_num, int samplerate)
+static inline float next_sine_sample(uint64_t sample_num, int samplerate,
+                                     int freq = 440)
 {
-    return sin(440 * 2 * M_PI * sample_num / samplerate);
+    return sin(freq * 2 * M_PI * sample_num / samplerate);
 }
 
 static inline void fill_frame_sine(uint64_t &nsample, float *out,
                                    portaudio::CallbackInfo &info,
-                                   bool left = true, bool right = true)
+                                   bool left = true, bool right = true,
+                                   int freq = 440)
 {
     for (uint64_t i = 0; i < info.frameCount; i++)
     {
-        auto v = next_sine_sample(nsample++, info.samplerate);
+        auto v = next_sine_sample(nsample++, info.samplerate, freq);
         // clang-format off
             if (left) *out++ = v; else *out++ = 0;
-            if (right) *out++ = 0;else *out++ = v;
+            if (right) *out++ = v;else *out++ = 0;
         // clang-format on
     }
 }
-
-void test_simple_play()
+// Explicitly test that the callbacks are seperate per instance of Stream:
+void test_dual_play(int num_seconds = 5)
 {
+
     namespace pa = portaudio;
     pa::Portaudio audio("test simple playback");
-    uint64_t n = 0;
-    auto mystream = audio.openDefaultStream([&](pa::CallbackInfo info) {
+    uint64_t nL = 0;
+    auto mystreamL = audio.openDefaultStream([&](pa::CallbackInfo info) {
         auto *out = static_cast<float *>(info.output);
-        fill_frame_sine(n, out, info);
+        fill_frame_sine(nL, out, info, true, false);
         return portaudio::CallbackResult::Continue;
     });
 
-    constexpr auto num_seconds = 5;
-    printf("Playing portaudio stream for %d seconds ...\n\n", num_seconds);
+    uint64_t nR = 0;
+    auto mystreamR = audio.openDefaultStream([&](pa::CallbackInfo info) {
+        auto *out = static_cast<float *>(info.output);
+        fill_frame_sine(nR, out, info, false, true, 1000);
+        return portaudio::CallbackResult::Continue;
+    });
+
+    printf("Playing (dual) portaudio stream for %d seconds ...\n\n",
+           num_seconds);
     try
     {
-        mystream.Start();
+        mystreamL.Start();
+        mystreamR.Start();
     }
     catch (pa::Exception &e)
     {
@@ -122,11 +143,17 @@ void test_simple_play()
         assert(0);
     }
 
-    while (mystream.elapsedSeconds() < num_seconds)
+    while (mystreamR.elapsedSeconds() < num_seconds)
     {
         pa::sleep_ms(10);
-        printf("Seconds elapsed: %.2f\r", mystream.elapsedSeconds());
+        printf("Seconds elapsed: %.2f\r", mystreamR.elapsedSeconds());
         fflush(stdout);
+        if (mystreamL.elapsedSeconds() >= (double)(num_seconds / 2.0) &&
+            mystreamL.isRunning())
+        {
+            mystreamL.Stop();
+            puts("Left channel stream stopped, now the right only ...");
+        }
     }
     puts("\n");
 
@@ -164,11 +191,79 @@ void test_my_exceptions()
     }
 }
 
+void test_simple_play(int num_seconds = 5)
+{
+    namespace pa = portaudio;
+    pa::Portaudio audio("test simple playback");
+    uint64_t n = 0;
+
+    auto mystream = audio.openDefaultStream([&](pa::CallbackInfo info) {
+        auto *out = static_cast<float *>(info.output);
+        fill_frame_sine(n, out, info);
+        return portaudio::CallbackResult::Continue;
+    });
+
+    printf("Playing portaudio stream for %d seconds ...\n\n", num_seconds);
+    try
+    {
+        mystream.Start();
+    }
+    catch (pa::Exception &e)
+    {
+        std::cerr << e.what() << std::endl;
+        std::cerr << std::endl;
+        assert(0);
+    }
+
+    while (mystream.elapsedSeconds() < num_seconds)
+    {
+        pa::sleep_ms(10);
+        printf("Seconds elapsed: %.2f\r", mystream.elapsedSeconds());
+        fflush(stdout);
+    }
+    puts("\n");
+
+    return;
+}
+
+void test_advanced_play(portaudio::Portaudio &paObj, int samplerate)
+{
+    namespace pa = portaudio;
+    pa::StreamSetupInfo myinfo;
+    myinfo.samplerate = 48000;
+    std::atomic<int> the_samplerate = 0;
+    PaStreamParameters params = paObj.streamParamsDefault();
+    myinfo.outParams = &params;
+
+    pa::Stream mystream = paObj.openStream(myinfo, [&](pa::CallbackInfo info) {
+        assert(info.samplerate == 48000);
+        the_samplerate = info.samplerate;
+        return pa::CallbackResult::Continue;
+    });
+
+    mystream.Start();
+    int slept = 0;
+    while (the_samplerate == 0)
+    {
+        pa::sleep_ms(50);
+        slept++;
+        assert(slept < 20);
+    }
+
+    assert(the_samplerate == 48000);
+}
+
 int main(int, char **)
 {
 
+    test_enumerator();
+    {
+        portaudio::Portaudio paObj;
+        test_advanced_play(paObj, 48000);
+    }
     test_my_exceptions();
     test_setup_teardown();
-    test_enumerator();
-    test_simple_play();
+
+    test_simple_play(1);
+    test_dual_play(1);
 }
