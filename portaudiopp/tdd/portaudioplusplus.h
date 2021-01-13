@@ -30,8 +30,8 @@ namespace portaudio
 static inline void sleep_ms(const long ms) noexcept { Pa_Sleep(ms); }
 class Exception : public std::runtime_error
 {
-    std::string m_str;
     std::ostringstream m_stream;
+    std::string m_str;
     PaError m_errcode;
 
   public:
