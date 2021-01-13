@@ -1,9 +1,11 @@
-#include "portaudioplusplus.hpp"
+#include "portaudioplusplus.h"
 
 void test_setup_teardown()
 {
     namespace pa = portaudio;
+
     {
+
         pa::Portaudio mypa;
         puts(mypa.info.versionText);
         assert(strlen(mypa.info.versionText) > 0);
@@ -77,55 +79,64 @@ void test_enumerator()
     }
 }
 
+static inline float next_sine_sample(uint64_t sample_num, int samplerate)
+{
+    return sin(440 * 2 * M_PI * sample_num / samplerate);
+}
+
+static inline void fill_frame_sine(uint64_t &nsample, float *out,
+                                   portaudio::CallbackInfo &info,
+                                   bool left = true, bool right = true)
+{
+    for (uint64_t i = 0; i < info.frameCount; i++)
+    {
+        auto v = next_sine_sample(nsample++, info.samplerate);
+        // clang-format off
+            if (left) *out++ = v; else *out++ = 0;
+            if (right) *out++ = 0;else *out++ = v;
+        // clang-format on
+    }
+}
+
 void test_simple_play()
 {
-    portaudio::Portaudio audio("test simple playback");
-    assert(audio.id().size() > 0);
-    auto dev = audio.enumerator().default_device();
-    assert(dev);
-    printf("Default device name is: %s\n", dev->name);
-
-    struct mysine_t : public portaudio::AudioCallback
-    {
-        uint64_t n = 0;
-        virtual portaudio::CallbackResult
-        onCallback(portaudio::CallbackInfo info) noexcept override
-        {
-            auto *out = (float *)(info.output);
-            for (uint64_t i = 0; i < info.frameCount; i++, n++)
-            {
-                float v = sin(440 * 2 * M_PI * n / 44100);
-                *out++ = v;
-                *out++ = v;
-            }
-            return portaudio::CallbackResult::Continue;
-        }
-    };
-
-    mysine_t mycb;
-    auto stream = audio.preparePlay(&mycb);
-
-    assert(stream);
+    namespace pa = portaudio;
+    pa::Portaudio audio("test simple playback");
+    uint64_t n = 0;
+    auto mystream = audio.openDefaultStream([&](pa::CallbackInfo info) {
+        auto *out = static_cast<float *>(info.output);
+        fill_frame_sine(n, out, info);
+        return portaudio::CallbackResult::Continue;
+    });
 
     constexpr auto num_seconds = 5;
     printf("Playing portaudio stream for %d seconds ...\n\n", num_seconds);
-    audio.play();
-
-    PaTime dtime = 0;
-    while (dtime < num_seconds)
+    try
     {
-        dtime = audio.elapsedSeconds();
-        printf("\rStream Elapsed: %.2f", dtime);
-        fflush(stdout);
-        std::cout.flush();
-        portaudio::sleep_ms(10);
+        mystream.Start();
     }
-    std::cout << std::endl;
+    catch (pa::Exception &e)
+    {
+        std::cerr << e.what() << std::endl;
+        std::cerr << std::endl;
+        assert(0);
+    }
+
+    while (mystream.elapsedSeconds() < num_seconds)
+    {
+        pa::sleep_ms(10);
+        printf("Seconds elapsed: %.2f\r", mystream.elapsedSeconds());
+        fflush(stdout);
+    }
+    puts("\n");
+
+    return;
 }
 
 void test_my_exceptions()
 {
     namespace pa = portaudio;
+
     try
     {
         pa::Exception mye(-10000, "Additional Info 1", "Additional Info 2", 77,
@@ -155,6 +166,7 @@ void test_my_exceptions()
 
 int main(int, char **)
 {
+
     test_my_exceptions();
     test_setup_teardown();
     test_enumerator();

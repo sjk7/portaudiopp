@@ -3,7 +3,8 @@
         {
             "name": "Linux",
             "includePath": [
-                "${workspaceFolder}/**"
+                "${workspaceFolder}/**",
+                "../include"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/clang",
@@ -14,7 +15,7 @@
             "compilerArgs": [
                 "-std=c++17"
             ],
-            "compileCommands": "/home/steve/Documents/portAudio++/portaudiopp/tdd/build/compile_commands.json"
+            "compileCommands": "/home/steve/Documents/portAudio++/portaudiopp/tdd/build/compile_commands.json",
         }
     ],
     "version": 4
