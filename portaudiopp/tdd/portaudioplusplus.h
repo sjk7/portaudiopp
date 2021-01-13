@@ -30,8 +30,8 @@ namespace portaudio
 static inline void sleep_ms(const long ms) noexcept { Pa_Sleep(ms); }
 class Exception : public std::runtime_error
 {
-    std::ostringstream m_stream;
     std::string m_str;
+    std::ostringstream m_stream;
     PaError m_errcode;
 
   public:
@@ -43,23 +43,25 @@ class Exception : public std::runtime_error
     auto error_string_ex(PaError errCode, Args &&... args) noexcept
     {
         m_stream.str().clear();
-        m_stream << "PortAudio error code: " << errCode << "\n"
-                 << error_string(errCode) << "\n";
+        std::string pe = error_string(errCode);
+        m_stream << "PortAudio error code: " << errCode << " (" << pe << ")\n";
+
         strings::make_string(m_stream, args...);
         std::string annoying_temp = m_stream.str();
         return annoying_temp;
     }
 
     Exception(const PaError errCode) noexcept
-        : m_str(error_string(errCode)), std::runtime_error(""),
+        : std::runtime_error(""), m_str(error_string(errCode)),
           m_errcode(errCode)
     {
     }
 
     template <typename... ARGS>
     Exception(const PaError errCode, ARGS &&... args) noexcept
-        : m_str(error_string_ex(errCode, std::forward<ARGS>(args)...)),
-          std::runtime_error(""), m_errcode(errCode)
+        : std::runtime_error(""),
+          m_str(error_string_ex(errCode, std::forward<ARGS>(args)...)),
+          m_errcode(errCode)
     {
     }
 
@@ -267,23 +269,18 @@ class TimeStampGen
     TimeStampGen() {}
     TimeStampGen(const TimeStampGen &rhs) = delete;
     TimeStampGen &operator=(const TimeStampGen &rhs) = delete;
-    TimeStampGen &operator=(TimeStampGen &&rhs)
-    {
-        m_CurrentMillis = (rhs.elapsedMillis());
-        m_nframes = rhs.m_nframes;
-        m_Samplerate = rhs.m_Samplerate;
-        rhs.m_Samplerate = 0;
-        return *this;
-    }
+    TimeStampGen &operator=(TimeStampGen &&rhs) = delete;
+
     TimeStampGen(TimeStampGen &&rhs)
+        : m_CurrentMillis(rhs.m_CurrentMillis.load()),
+          m_Samplerate(rhs.m_Samplerate.load()), m_nframes(rhs.m_nframes.load())
     {
-        m_Samplerate = rhs.m_Samplerate;
-        m_nframes = rhs.m_nframes;
-        m_CurrentMillis = (rhs.elapsedMillis());
+
         rhs.m_Samplerate = 0;
     }
     int samplerate() const noexcept { return m_Samplerate; }
     double elapsedMillis() const noexcept { return m_CurrentMillis; }
+    uint64_t nframes() const noexcept { return m_nframes; }
     double elapsedSeconds() const noexcept
     {
         return (double)elapsedMillis() / 1000.0;
@@ -310,8 +307,8 @@ class TimeStampGen
 
   private:
     std::atomic<uint64_t> m_CurrentMillis = {0};
-    int m_Samplerate = {0};
-    uint64_t m_nframes = {0};
+    std::atomic<int> m_Samplerate = {0};
+    std::atomic<uint64_t> m_nframes = {0};
 }; // TimeStampGen
 
 } // namespace detail
@@ -360,7 +357,7 @@ template <typename AUDIOCALLBACK> class Stream : public detail::TimeStampGen
     }
 
     Stream &&operator=(Stream &&rhs) = delete;
-    const bool isRunning() const { return m_runstate > 0; }
+    bool isRunning() const { return m_runstate > 0; }
 
     StreamSetupInfo actualStreamInfo()
     {
@@ -447,7 +444,7 @@ template <typename AUDIOCALLBACK> class Stream : public detail::TimeStampGen
             throw Exception(-1, "Stop(): unexpected: no stream to start");
         }
         int ret = Pa_StopStream(m_info.stream);
-        if (ret)
+        if (ret && ret != paStreamIsStopped)
         {
             throw Exception(ret, "Error Stopping Stream");
         }
@@ -467,6 +464,15 @@ template <typename AUDIOCALLBACK> class Stream : public detail::TimeStampGen
             throw Exception(ret, "Error Starting Stream");
         }
         m_runstate = 1;
+    }
+
+    void Abort()
+    {
+        if (m_info.stream)
+        {
+            Pa_AbortStream(m_info.stream);
+            m_info.stream = nullptr;
+        }
     }
 
     void Close()
@@ -493,7 +499,7 @@ class Portaudio
   public:
     auto streamParamsDefault(PaDeviceInfoEx *device = nullptr)
     {
-        PaStreamParameters params = {0};
+        PaStreamParameters params = {0, 0, 0, 0, 0};
         params.channelCount = 2;
         if (device == nullptr)
             params.device = enumerator().default_device().device_index;
@@ -518,7 +524,7 @@ class Portaudio
         Pa_Terminate();
         m_instances--;
     }
-    const PaVersionInfo info = {0};
+    const PaVersionInfo info;
     static int instances() noexcept { return m_instances; }
     const enumerator_t &enumerator() const noexcept { return m_enum; }
     std::string_view id() const noexcept { return m_id; }
@@ -527,7 +533,7 @@ class Portaudio
     {
         Stream<CALLBACK> s(std::forward<CALLBACK>(cb));
         s.openDefault();
-        return std::move(s);
+        return s;
     }
 
     template <typename CALLBACK>
@@ -535,7 +541,7 @@ class Portaudio
     {
         Stream<CALLBACK> s(std::forward<CALLBACK>(cb));
         s.openSpecific(info);
-        return std::move(s);
+        return s;
     }
 
   private:

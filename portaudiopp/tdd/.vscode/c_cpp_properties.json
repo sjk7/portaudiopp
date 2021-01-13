@@ -7,15 +7,15 @@
                 "../include"
             ],
             "defines": [],
-            "compilerPath": "/usr/bin/clang",
+            "compilerPath": "/usr/bin/clang-11",
             "cStandard": "c11",
             "cppStandard": "c++17",
             "intelliSenseMode": "gcc-x64",
             "configurationProvider": "ms-vscode.cmake-tools",
             "compilerArgs": [
-                "-std=c++17"
+                "-std=c++17 -Wall"
             ],
-            "compileCommands": "/home/steve/Documents/portAudio++/portaudiopp/tdd/build/compile_commands.json",
+            "compileCommands": "/home/steve/Documents/portAudio++/portaudiopp/tdd/build/compile_commands.json"
         }
     ],
     "version": 4

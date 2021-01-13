@@ -1,0 +1,9 @@
+/home/steve/Desktop/portaudio/CMakeFiles/install/strip.dir
+/home/steve/Desktop/portaudio/CMakeFiles/install/local.dir
+/home/steve/Desktop/portaudio/CMakeFiles/install.dir
+/home/steve/Desktop/portaudio/CMakeFiles/list_install_components.dir
+/home/steve/Desktop/portaudio/CMakeFiles/rebuild_cache.dir
+/home/steve/Desktop/portaudio/CMakeFiles/uninstall.dir
+/home/steve/Desktop/portaudio/CMakeFiles/portaudio_static.dir
+/home/steve/Desktop/portaudio/CMakeFiles/edit_cache.dir
+/home/steve/Desktop/portaudio/CMakeFiles/portaudio.dir

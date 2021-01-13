@@ -18,8 +18,6 @@ set(CMAKE_MAKEFILE_DEPENDS
   "/usr/share/cmake-3.10/Modules/CMakeLanguageInformation.cmake"
   "/usr/share/cmake-3.10/Modules/CMakeSystemSpecificInformation.cmake"
   "/usr/share/cmake-3.10/Modules/CMakeSystemSpecificInitialize.cmake"
-  "/usr/share/cmake-3.10/Modules/CPack.cmake"
-  "/usr/share/cmake-3.10/Modules/CPackComponent.cmake"
   "/usr/share/cmake-3.10/Modules/CTest.cmake"
   "/usr/share/cmake-3.10/Modules/CTestTargets.cmake"
   "/usr/share/cmake-3.10/Modules/CTestUseLaunchers.cmake"
@@ -33,7 +31,6 @@ set(CMAKE_MAKEFILE_DEPENDS
   "/usr/share/cmake-3.10/Modules/Platform/Linux-GNU.cmake"
   "/usr/share/cmake-3.10/Modules/Platform/Linux.cmake"
   "/usr/share/cmake-3.10/Modules/Platform/UnixPaths.cmake"
-  "/usr/share/cmake-3.10/Templates/CPackConfig.cmake.in"
   )
 
 # The corresponding makefile is:
@@ -45,8 +42,6 @@ set(CMAKE_MAKEFILE_OUTPUTS
 # Byproducts of CMake generate step:
 set(CMAKE_MAKEFILE_PRODUCTS
   "DartConfiguration.tcl"
-  "CPackConfig.cmake"
-  "CPackSourceConfig.cmake"
   "CMakeFiles/CMakeDirectoryInformation.cmake"
   )
 

@@ -95,10 +95,10 @@ static inline float next_sine_sample(uint64_t sample_num, int samplerate,
     return sin(freq * 2 * M_PI * sample_num / samplerate);
 }
 
-static inline void fill_frame_sine(uint64_t &nsample, float *out,
-                                   portaudio::CallbackInfo &info,
-                                   bool left = true, bool right = true,
-                                   int freq = 440)
+static inline void fill_buffer_sine(uint64_t &nsample, float *out,
+                                    portaudio::CallbackInfo &info,
+                                    bool left = true, bool right = true,
+                                    int freq = 440)
 {
     for (uint64_t i = 0; i < info.frameCount; i++)
     {
@@ -118,14 +118,14 @@ void test_dual_play(int num_seconds = 5)
     uint64_t nL = 0;
     auto mystreamL = audio.openDefaultStream([&](pa::CallbackInfo info) {
         auto *out = static_cast<float *>(info.output);
-        fill_frame_sine(nL, out, info, true, false);
+        fill_buffer_sine(nL, out, info, true, false);
         return portaudio::CallbackResult::Continue;
     });
 
     uint64_t nR = 0;
     auto mystreamR = audio.openDefaultStream([&](pa::CallbackInfo info) {
         auto *out = static_cast<float *>(info.output);
-        fill_frame_sine(nR, out, info, false, true, 1000);
+        fill_buffer_sine(nR, out, info, false, true, 1000);
         return portaudio::CallbackResult::Continue;
     });
 
@@ -174,8 +174,8 @@ void test_my_exceptions()
     {
         const auto txt = std::string(e.what());
         assert(txt ==
-               "PortAudio error code: -10000\nPortAudio not "
-               "initialized\nAdditional Info 1 Additional Info 2 77 42 ");
+               "PortAudio error code: -10000 (PortAudio not "
+               "initialized)\nAdditional Info 1 Additional Info 2 77 42 ");
     }
 
     try
@@ -199,7 +199,7 @@ void test_simple_play(int num_seconds = 5)
 
     auto mystream = audio.openDefaultStream([&](pa::CallbackInfo info) {
         auto *out = static_cast<float *>(info.output);
-        fill_frame_sine(n, out, info);
+        fill_buffer_sine(n, out, info);
         return portaudio::CallbackResult::Continue;
     });
 
@@ -230,7 +230,7 @@ void test_advanced_play(portaudio::Portaudio &paObj, int samplerate)
 {
     namespace pa = portaudio;
     pa::StreamSetupInfo myinfo;
-    myinfo.samplerate = 48000;
+    myinfo.samplerate = samplerate;
     std::atomic<int> the_samplerate = 0;
     PaStreamParameters params = paObj.streamParamsDefault();
     myinfo.outParams = &params;
@@ -257,13 +257,14 @@ int main(int, char **)
 {
 
     test_enumerator();
-    {
-        portaudio::Portaudio paObj;
-        test_advanced_play(paObj, 48000);
-    }
     test_my_exceptions();
     test_setup_teardown();
 
     test_simple_play(1);
     test_dual_play(1);
+
+    {
+        portaudio::Portaudio paObj;
+        test_advanced_play(paObj, 48000);
+    }
 }

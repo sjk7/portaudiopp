@@ -90,6 +90,7 @@ tdd_EXTERNAL_OBJECTS =
 
 tdd: CMakeFiles/tdd.dir/main.cpp.o
 tdd: CMakeFiles/tdd.dir/build.make
+tdd: ../../../portaudio/build/libportaudio.a
 tdd: CMakeFiles/tdd.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/steve/Documents/portAudio++/portaudiopp/tdd/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Linking CXX executable tdd"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/tdd.dir/link.txt --verbose=$(VERBOSE)

@@ -1,1 +1,1 @@
-/usr/bin/g++-10  -g  -rdynamic CMakeFiles/tdd.dir/main.cpp.o  -o tdd -lportaudio 
+/usr/bin/g++-10  -g  -rdynamic CMakeFiles/tdd.dir/main.cpp.o  -o tdd ../../../portaudio/build/libportaudio.a -lpthread -ljack -lasound 

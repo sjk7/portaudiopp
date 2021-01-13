@@ -1,0 +1,44 @@
+
+apis:
+ALSA
+OSS
+
+
+devices:
+HDA ATI HDMI: 0 (hw:0,3)
+HD-Audio Generic: ALC887-VD Analog (hw:1,0)
+HD-Audio Generic: ALC887-VD Digital (hw:1,1)
+HD-Audio Generic: ALC887-VD Alt Analog (hw:1,2)
+hdmi
+pulse
+default
+
+
+Devices by api:
+Api name: OSS: 
+Devices:
+None
+
+
+Api name: ALSA: 
+Devices:
+HDA ATI HDMI: 0 (hw:0,3)
+HD-Audio Generic: ALC887-VD Analog (hw:1,0)
+HD-Audio Generic: ALC887-VD Digital (hw:1,1)
+HD-Audio Generic: ALC887-VD Alt Analog (hw:1,2)
+hdmi
+pulse
+default
+
+
+Devices by api complete.
+PortAudio V19.6.0-devel, revision 396fe4b6699ae929d3a685b3ef8a7e97396139a4
+Playing portaudio stream for 1 seconds ...
+
+Seconds elapsed: 0.01Seconds elapsed: 0.02Seconds elapsed: 0.03Seconds elapsed: 0.05Seconds elapsed: 0.05Seconds elapsed: 0.06Seconds elapsed: 0.07Seconds elapsed: 0.08Seconds elapsed: 0.09Seconds elapsed: 0.10Seconds elapsed: 0.12Seconds elapsed: 0.13Seconds elapsed: 0.14Seconds elapsed: 0.15Seconds elapsed: 0.15Seconds elapsed: 0.16Seconds elapsed: 0.17Seconds elapsed: 0.18Seconds elapsed: 0.20Seconds elapsed: 0.21Seconds elapsed: 0.22Seconds elapsed: 0.23Seconds elapsed: 0.24Seconds elapsed: 0.24Seconds elapsed: 0.26Seconds elapsed: 0.27Seconds elapsed: 0.28Seconds elapsed: 0.29Seconds elapsed: 0.30Seconds elapsed: 0.31Seconds elapsed: 0.33Seconds elapsed: 0.33Seconds elapsed: 0.34Seconds elapsed: 0.35Seconds elapsed: 0.36Seconds elapsed: 0.37Seconds elapsed: 0.37Seconds elapsed: 0.38Seconds elapsed: 0.39Seconds elapsed: 0.41Seconds elapsed: 0.42Seconds elapsed: 0.43Seconds elapsed: 0.44Seconds elapsed: 0.45Seconds elapsed: 0.45Seconds elapsed: 0.46Seconds elapsed: 0.48Seconds elapsed: 0.49Seconds elapsed: 0.50Seconds elapsed: 0.51Seconds elapsed: 0.51Seconds elapsed: 0.53Seconds elapsed: 0.55Seconds elapsed: 0.56Seconds elapsed: 0.57Seconds elapsed: 0.58Seconds elapsed: 0.59Seconds elapsed: 0.59Seconds elapsed: 0.60Seconds elapsed: 0.61Seconds elapsed: 0.63Seconds elapsed: 0.64Seconds elapsed: 0.65Seconds elapsed: 0.66Seconds elapsed: 0.67Seconds elapsed: 0.67Seconds elapsed: 0.68Seconds elapsed: 0.70Seconds elapsed: 0.71Seconds elapsed: 0.72Seconds elapsed: 0.73Seconds elapsed: 0.74Seconds elapsed: 0.74Seconds elapsed: 0.75Seconds elapsed: 0.77Seconds elapsed: 0.78Seconds elapsed: 0.79Seconds elapsed: 0.80Seconds elapsed: 0.81Seconds elapsed: 0.82Seconds elapsed: 0.82Seconds elapsed: 0.83Seconds elapsed: 0.85Seconds elapsed: 0.86Seconds elapsed: 0.87Seconds elapsed: 0.88Seconds elapsed: 0.89Seconds elapsed: 0.91Seconds elapsed: 0.91Seconds elapsed: 0.92Seconds elapsed: 0.93Seconds elapsed: 0.94Seconds elapsed: 0.95Seconds elapsed: 0.96Seconds elapsed: 0.97Seconds elapsed: 0.97Seconds elapsed: 0.99Seconds elapsed: 1.00Seconds elapsed: 1.01
+
+Playing (dual) portaudio stream for 1 seconds ...
+
+Seconds elapsed: 0.01Seconds elapsed: 0.02Seconds elapsed: 0.03Seconds elapsed: 0.05Seconds elapsed: 0.06Seconds elapsed: 0.06Seconds elapsed: 0.07Seconds elapsed: 0.08Seconds elapsed: 0.09Seconds elapsed: 0.10Seconds elapsed: 0.12Seconds elapsed: 0.13Seconds elapsed: 0.14Seconds elapsed: 0.15Seconds elapsed: 0.15Seconds elapsed: 0.16Seconds elapsed: 0.17Seconds elapsed: 0.18Seconds elapsed: 0.20Seconds elapsed: 0.20Seconds elapsed: 0.22Seconds elapsed: 0.23Seconds elapsed: 0.23Seconds elapsed: 0.23Seconds elapsed: 0.26Seconds elapsed: 0.27Seconds elapsed: 0.28Seconds elapsed: 0.29Seconds elapsed: 0.29Seconds elapsed: 0.30Seconds elapsed: 0.31Seconds elapsed: 0.33Seconds elapsed: 0.34Seconds elapsed: 0.36Seconds elapsed: 0.36Seconds elapsed: 0.37Seconds elapsed: 0.38Seconds elapsed: 0.39Seconds elapsed: 0.41Seconds elapsed: 0.42Seconds elapsed: 0.42Seconds elapsed: 0.42Seconds elapsed: 0.44Seconds elapsed: 0.45Seconds elapsed: 0.46Seconds elapsed: 0.46Seconds elapsed: 0.48Seconds elapsed: 0.49Left channel stream stopped, now the right only ...
+Seconds elapsed: 0.50Seconds elapsed: 0.51Seconds elapsed: 0.52Seconds elapsed: 0.52Seconds elapsed: 0.55Seconds elapsed: 0.56Seconds elapsed: 0.57Seconds elapsed: 0.58Seconds elapsed: 0.58Seconds elapsed: 0.59Seconds elapsed: 0.60Seconds elapsed: 0.61Seconds elapsed: 0.63Seconds elapsed: 0.63Seconds elapsed: 0.64Seconds elapsed: 0.66Seconds elapsed: 0.67Seconds elapsed: 0.68Seconds elapsed: 0.70Seconds elapsed: 0.70Seconds elapsed: 0.71Seconds elapsed: 0.72Seconds elapsed: 0.73Seconds elapsed: 0.74Seconds elapsed: 0.75Seconds elapsed: 0.77Seconds elapsed: 0.77Seconds elapsed: 0.78Seconds elapsed: 0.79Seconds elapsed: 0.80Seconds elapsed: 0.81Seconds elapsed: 0.82Seconds elapsed: 0.83Seconds elapsed: 0.85Seconds elapsed: 0.85Seconds elapsed: 0.86Seconds elapsed: 0.87Seconds elapsed: 0.88Seconds elapsed: 0.89Seconds elapsed: 0.91Seconds elapsed: 0.92Seconds elapsed: 0.92Seconds elapsed: 0.93Seconds elapsed: 0.94Seconds elapsed: 0.95Seconds elapsed: 0.96Seconds elapsed: 0.97Seconds elapsed: 0.99Seconds elapsed: 1.00Seconds elapsed: 1.00Seconds elapsed: 1.01
+
