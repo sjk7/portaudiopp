@@ -67,12 +67,13 @@ class Exception : public std::runtime_error
 
     virtual const char *what() const noexcept
     {
+
         const char *ps = m_str.c_str();
         return ps;
     }
 
     PaError errorCode() const noexcept { return m_errcode; }
-};
+}; // namespace portaudio
 
 struct PaDeviceInfoEx
 {
