@@ -1,7 +1,7 @@
 [
 {
   "directory": "/home/steve/Documents/portAudio++/portaudiopp/tdd/build",
-  "command": "/usr/bin/g++-10   -I/home/steve/Documents/portAudio++/portaudiopp/tdd/../include -I/home/steve/Documents/portAudio++/portaudiopp/tdd/../../portaudio  -g   -Wall -Wextra -pedantic -Werror -std=gnu++1z -o CMakeFiles/tdd.dir/main.cpp.o -c /home/steve/Documents/portAudio++/portaudiopp/tdd/main.cpp",
+  "command": "/usr/bin/g++-10   -I/home/steve/Documents/portAudio++/portaudiopp/tdd/../include -I/home/steve/Documents/portAudio++/portaudiopp/tdd/../../portaudio  -g   -Wall -Wextra -pedantic -std=gnu++1z -o CMakeFiles/tdd.dir/main.cpp.o -c /home/steve/Documents/portAudio++/portaudiopp/tdd/main.cpp",
   "file": "/home/steve/Documents/portAudio++/portaudiopp/tdd/main.cpp"
 }
 ]

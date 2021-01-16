@@ -7,6 +7,7 @@
 #include <cstring>
 #include <iostream>
 #include <math.h>
+#include <memory> // unique_ptr
 #include <portaudio.h>
 #include <sstream>
 #include <stdexcept>
@@ -73,19 +74,56 @@ class Exception : public std::runtime_error
     }
 
     PaError errorCode() const noexcept { return m_errcode; }
-}; // namespace portaudio
-
-struct PaDeviceInfoEx
-{
-    const PaDeviceInfo *info = nullptr;
-    int device_index = -1;
 };
 
+struct SampleFormat
+{
+    static inline PaSampleFormat Float32 = paFloat32;
+    static inline PaSampleFormat Int32 = paInt32;
+    static inline PaSampleFormat Int24 = paInt24;
+    static inline PaSampleFormat Int16 = paInt16;
+    static inline PaSampleFormat Int8 = paInt8;
+    static inline PaSampleFormat UInt8 = paUInt8;
+    static inline PaSampleFormat CustomFormat = paCustomFormat;
+    static inline PaSampleFormat NonInterleaved = paNonInterleaved;
+};
+
+struct StreamSetupInfo
+{
+    // PaStreamCallback *streamCallback = {nullptr};
+    PaStream *stream = {nullptr};
+    int inputChannelCount = 2;
+    int outputChannelCount = 2;
+    PaSampleFormat sampleFormat = SampleFormat::Float32;
+    double samplerate = 44100;
+    unsigned long framesPerBuffer = 512;
+    void *userData = {nullptr};
+    const PaStreamParameters *inParams = {nullptr};
+    const PaStreamParameters *outParams = {nullptr};
+    PaStreamFlags flags = {0};
+    PaTime inputLatency = {0};
+    PaTime outputLatency = {0};
+};
+
+static inline int constexpr INVALID_PA_DEVICE_INDEX = -1;
 struct PaHostApiInfoEx
 {
     const PaHostApiInfo *info = nullptr;
     int api_index = -1;
+    int defaultDeviceApiIndex = INVALID_PA_DEVICE_INDEX;
+
 };
+
+struct PaDeviceInfoEx
+{
+    const PaDeviceInfo *info = nullptr;
+    int global_device_index = INVALID_PA_DEVICE_INDEX;
+    StreamSetupInfo streamSetupInfo = {0};
+    const PaHostApiInfoEx* hostApiInfo = { nullptr};
+    int api_device_index = INVALID_PA_DEVICE_INDEX;
+};
+
+
 
 using hostApiList = std::vector<PaHostApiInfoEx>;
 using deviceList = std::vector<PaDeviceInfoEx>;
@@ -134,6 +172,14 @@ struct AudioCallback
 namespace detail
 {
 
+template <typename T>
+class no_copy{
+protected:
+    no_copy() = default;
+    no_copy& operator=(const no_copy&) = delete;
+    no_copy(const no_copy&) = delete;
+};
+
 static inline hostApiList enum_apis()
 {
     hostApiList list;
@@ -152,7 +198,8 @@ static inline deviceList enum_devices()
     for (int i = 0; i < Pa_GetDeviceCount(); ++i)
     {
         auto inf = Pa_GetDeviceInfo(i);
-        PaDeviceInfoEx d{inf, i};
+        PaDeviceInfoEx d{inf, i, {0}};
+
         list.push_back(d);
     }
     return list;
@@ -167,10 +214,15 @@ struct CallbackUserData : protected AudioCallback
     }
 };
 
+
+
 } // namespace detail
 
-struct enumerator_t
+struct enumerator_t : detail::no_copy<enumerator_t>
 {
+    void populate(){
+        m_apiDeviceList = devicesByApi(true);
+    }
     const hostApiList &apis(bool force_refresh = false) const
     {
         if (m_apis.empty() || force_refresh)
@@ -191,13 +243,25 @@ struct enumerator_t
 
     const apiDeviceList devicesByApi(bool force_refresh = false) const
     {
+        if (!force_refresh && !apis().empty() && !this->devices().empty()
+                && !this->m_apiDeviceList.empty()){
+            return m_apiDeviceList;
+        }
         const hostApiList &apis = this->apis(force_refresh);
-        const deviceList devices = this->devices(force_refresh);
-
+        volatile size_t apis_sz = apis.size();
+        (void)apis_sz; // do not optimize away.
+        const auto& devs_const = this->devices(force_refresh);
+        volatile size_t sz = devs_const.size(); // do not optimize away
+        (void)sz;
         apiDeviceList retval;
+        const auto total_devs = Pa_GetDeviceCount();
+        (void)total_devs;
 
-        for (const auto api : apis)
+        for (auto& api : m_apis)
         {
+            const auto ptrinfo = Pa_GetDeviceInfo(api.info->defaultOutputDevice);
+            const std::string default_device_name_for_api = ptrinfo->name;
+
             auto it = retval.find(api.info->name);
             if (it == retval.end())
             {
@@ -205,59 +269,103 @@ struct enumerator_t
                     retval.insert({std::string(api.info->name), deviceList{}});
                 it = pr.first;
             }
+
+            for (int i = 0; i < api.info->deviceCount - 1; ++i){
+                const auto global_index = Pa_HostApiDeviceIndexToDeviceIndex(api.api_index, i);
+                auto& dev = m_devices.at(global_index);
+                std::string name(dev.info->name);
+                if (name == default_device_name_for_api){
+                    api.defaultDeviceApiIndex = i;
+                }
+                dev.hostApiInfo = &api;
+                dev.api_device_index = i;
+                it->second.push_back(dev);
+            }
+        };
+
+        const auto def_index = Pa_GetDefaultHostApi();
+        assert((size_t)def_index < m_apis.size());
+        auto& def_host_api =m_apis.at(def_index);
+        std::string def_name =std::string(def_host_api.info->name);
+        auto pr = retval.find(def_name);
+        auto&  def_host_api_collection = pr->second;
+
+        for (auto& d : this->m_devices){
+            if(d.api_device_index == INVALID_PA_DEVICE_INDEX){
+                assert(d.hostApiInfo == nullptr);
+                std::string name(d.info->name);
+                d.hostApiInfo = &def_host_api;
+                d.api_device_index = def_host_api.info->defaultOutputDevice;
+                def_host_api_collection.push_back (d);
+                if (name == def_name){
+                    def_host_api.defaultDeviceApiIndex = d.api_device_index;
+                }
+
+            }
         }
 
-        for (const auto &d : devices)
-        {
-            const auto api = Pa_GetHostApiInfo(d.info->hostApi);
-            auto pr = retval.find(api->name);
-            pr->second.push_back(d);
+        for (const auto& a : m_apis){
+            assert(a.defaultDeviceApiIndex >= 0);
+            assert (a.defaultDeviceApiIndex <= a.info->deviceCount);
         }
-
         return retval;
     }
 
-    const PaDeviceInfoEx default_device() const noexcept
+    // returns an *instance* (a copy) of an input device where you might want to adjust its properties
+    // perhaps before calling openStream() etc on it.
+    const PaDeviceInfoEx defaultInputDevice() const noexcept
     {
-        const auto idx = Pa_GetDefaultOutputDevice();
-        PaDeviceInfoEx retval{Pa_GetDeviceInfo(idx), idx};
-        return retval;
+
+        const auto idx = Pa_GetDefaultInputDevice();
+        const auto& devs = devices();
+        assert((size_t)idx < devs.size());
+        return m_devices.at(idx);
     }
+    // returns an *instance* (a copy) of an output device where you might want to adjust its properties
+    // perhaps before calling openStream() etc on it.
+    const PaDeviceInfoEx defaultDevice() const noexcept
+    {
+
+        const auto idx = Pa_GetDefaultOutputDevice();
+        const auto& devs = devices();
+        assert((size_t)idx < devs.size());
+        return m_devices.at(idx);
+    }
+    const PaHostApiInfoEx& defaultHostApi() const noexcept
+    {
+        const auto def_index = Pa_GetDefaultHostApi();
+        assert((size_t)def_index < m_apis.size());
+        return m_apis.at(def_index);
+    }
+
 
   private:
     mutable hostApiList m_apis;
     mutable deviceList m_devices;
     mutable apiDeviceList m_apiDeviceList;
+    deviceList& devices_non_const() noexcept {
+        return m_devices;
+    }
+
+
 };
 
-struct SampleFormat
-{
-    static inline PaSampleFormat Float32 = paFloat32;
-    static inline PaSampleFormat Int32 = paInt32;
-    static inline PaSampleFormat Int24 = paInt24;
-    static inline PaSampleFormat Int16 = paInt16;
-    static inline PaSampleFormat Int8 = paInt8;
-    static inline PaSampleFormat UInt8 = paUInt8;
-    static inline PaSampleFormat CustomFormat = paCustomFormat;
-    static inline PaSampleFormat NonInterleaved = paNonInterleaved;
-};
 
-struct StreamSetupInfo
+
+static inline StreamSetupInfo makeStreamSetupInfo(int samplerate = 44100,
+                                    PaSampleFormat fmt = SampleFormat::Float32,
+                                    PaStreamParameters *inParams = nullptr,
+                                    PaStreamParameters *outParams = nullptr)
 {
-    // PaStreamCallback *streamCallback = {nullptr};
-    PaStream *stream = {nullptr};
-    int inputChannelCount = 2;
-    int outputChannelCount = 2;
-    PaSampleFormat sampleFormat = SampleFormat::Float32;
-    double samplerate = 44100;
-    unsigned long framesPerBuffer = 512;
-    void *userData = {nullptr};
-    const PaStreamParameters *inParams = {nullptr};
-    const PaStreamParameters *outParams = {nullptr};
-    PaStreamFlags flags = {0};
-    PaTime inputLatency = {0};
-    PaTime outputLatency = {0};
-};
+    StreamSetupInfo s;
+    if (samplerate > 0) s.samplerate = samplerate;
+    s.sampleFormat = (PaSampleFormat)fmt;
+    s.inParams = inParams;
+    s.outParams = outParams;
+    return s;
+}
+
+
 
 namespace detail
 {
@@ -335,8 +443,11 @@ template <typename AUDIOCALLBACK> class Stream : public detail::TimeStampGen
     }
 
   public:
-    explicit Stream(AUDIOCALLBACK &&cb, std::string_view id = "")
-        : m_cb(cb), m_sid(id)
+    Stream(StreamSetupInfo &info, AUDIOCALLBACK &&cb) : m_info(info), m_cb(cb)
+    {
+        openSpecific(info);
+    }
+    Stream(AUDIOCALLBACK &&cb, std::string_view id = "") : m_cb(cb), m_sid(id)
     {
     }
     Stream(const Stream &rhs) = delete;
@@ -422,6 +533,12 @@ template <typename AUDIOCALLBACK> class Stream : public detail::TimeStampGen
     void openSpecific(StreamSetupInfo &info)
     {
 
+        if (info.inParams == nullptr && info.outParams == nullptr)
+            throw Exception(-1, "openSpecific: Either or both inParams and outParams must be set.");
+
+        if (info.framesPerBuffer <=0 )info.framesPerBuffer = 512;
+
+
         const auto err =
             Pa_OpenStream(&info.stream, info.inParams, info.outParams,
                           info.samplerate, info.framesPerBuffer, info.flags,
@@ -498,18 +615,6 @@ template <typename AUDIOCALLBACK> class Stream : public detail::TimeStampGen
 class Portaudio
 {
   public:
-    auto streamParamsDefault(PaDeviceInfoEx *device = nullptr)
-    {
-        PaStreamParameters params = {0, 0, 0, 0, 0};
-        params.channelCount = 2;
-        if (device == nullptr)
-            params.device = enumerator().default_device().device_index;
-        else
-            params.device = device->device_index;
-
-        params.sampleFormat = SampleFormat::Float32;
-        return params;
-    }
     Portaudio(const std::string_view id = "")
         : info(*Pa_GetVersionInfo()), m_id(id)
     {
@@ -519,6 +624,7 @@ class Portaudio
             throw std::runtime_error(Pa_GetErrorText(err));
         }
         m_instances++;
+       m_enum.populate();
     }
     ~Portaudio() noexcept
     {
@@ -538,11 +644,45 @@ class Portaudio
     }
 
     template <typename CALLBACK>
+    auto openStream (portaudio::PaDeviceInfoEx& device, CALLBACK&& cb){
+        Stream s(std::forward<CALLBACK> (cb));
+        if (device.streamSetupInfo.outParams && device.info->maxOutputChannels == 0){
+            throw Exception(-1, "openStream: You are trying to *play* to an input-only device.");
+        }
+        if (device.streamSetupInfo.inParams && device.info->maxInputChannels== 0){
+             throw Exception(-1, "openStream: You are trying to *capture* to an output-only device.");
+        }
+        s.openSpecific(device.streamSetupInfo);
+        return s;
+    }
+
+    template <typename CALLBACK>
     auto openStream(StreamSetupInfo &info, CALLBACK &&cb)
     {
         Stream<CALLBACK> s(std::forward<CALLBACK>(cb));
         s.openSpecific(info);
         return s;
+    }
+
+    auto openAndRunStream(StreamSetupInfo &info, AudioCallback &cb)
+    {
+        std::atomic<CallbackResult> streamRetVal(CallbackResult::Continue);
+
+        Stream s(info, [&](CallbackInfo info) {
+            auto rv = cb.onCallback(info);
+            if (rv != CallbackResult::Continue)
+            {
+                streamRetVal = rv;
+            }
+            return rv;
+        });
+
+        s.Start();
+        while (streamRetVal == CallbackResult::Continue)
+        {
+            sleep_ms(50);
+        }
+        s.Stop();
     }
 
   private:
@@ -551,5 +691,43 @@ class Portaudio
     mutable hostApiList m_apis;
     mutable enumerator_t m_enum;
 };
+
+static inline auto streamParamsDefault(const Portaudio &pa,
+                                       PaDeviceInfoEx *device = nullptr)
+{
+    PaStreamParameters params = {0, 0, 0, 0, 0};
+
+    params.channelCount = 2;
+    if (device == nullptr)
+        params.device = pa.enumerator().defaultDevice().global_device_index;
+    else
+        params.device = device->global_device_index;
+
+    params.sampleFormat = SampleFormat::Float32;
+    return params;
+}
+
+static inline float next_sine_sample(uint64_t sample_num, int samplerate,
+                                     int freq = 440)
+{
+    return sin(freq * 2 * M_PI * sample_num / samplerate);
+}
+
+
+static inline void fill_buffer_sine(uint64_t &nsample,
+                                    portaudio::CallbackInfo &info,
+                                    bool left = true, bool right = true,
+                                    int freq = 440)
+{
+    float* out = (float*)info.output;
+    for (uint64_t i = 0; i < info.frameCount; i++)
+    {
+        auto v = next_sine_sample(nsample++, info.samplerate, freq);
+        // clang-format off
+            if (left) *out++ = v; else *out++ = 0;
+            if (right) *out++ = v;else *out++ = 0;
+        // clang-format on
+    }
+}
 
 } // namespace portaudio

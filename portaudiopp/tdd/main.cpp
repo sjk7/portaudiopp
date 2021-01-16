@@ -145,7 +145,7 @@ void test_dual_play(int num_seconds = 5)
 
     while (mystreamR.elapsedSeconds() < num_seconds)
     {
-        pa::sleep_ms(10);
+        pa::sleep_ms(50);
         printf("Seconds elapsed: %.2f\r", mystreamR.elapsedSeconds());
         fflush(stdout);
         if (mystreamL.elapsedSeconds() >= (double)(num_seconds / 2.0) &&
@@ -217,7 +217,7 @@ void test_simple_play(int num_seconds = 5)
 
     while (mystream.elapsedSeconds() < num_seconds)
     {
-        pa::sleep_ms(10);
+        pa::sleep_ms(100);
         printf("Seconds elapsed: %.2f\r", mystream.elapsedSeconds());
         fflush(stdout);
     }
@@ -232,8 +232,8 @@ void test_advanced_play(portaudio::Portaudio &paObj, int samplerate)
     pa::StreamSetupInfo myinfo;
     myinfo.samplerate = samplerate;
     std::atomic<int> the_samplerate = 0;
-    PaStreamParameters params = paObj.streamParamsDefault();
-    myinfo.outParams = &params;
+    auto myparms = portaudio::streamParamsDefault(paObj);
+    myinfo.outParams = &myparms;
 
     pa::Stream mystream = paObj.openStream(myinfo, [&](pa::CallbackInfo info) {
         assert(info.samplerate == 48000);
@@ -253,6 +253,44 @@ void test_advanced_play(portaudio::Portaudio &paObj, int samplerate)
     assert(the_samplerate == 48000);
 }
 
+struct myCallbackClass : public portaudio::AudioCallback
+{
+    unsigned long n = 0;
+    portaudio::CallbackResult
+    onCallback(portaudio::CallbackInfo info) noexcept override
+    {
+        auto *out = static_cast<float *>(info.output);
+        fill_buffer_sine(n, out, info);
+        if (info.elapsed_time >= 5)
+        {
+            return portaudio::CallbackResult::Complete;
+        }
+        return portaudio::CallbackResult::Continue;
+    }
+};
+
+void test_callback_stream()
+{
+    namespace pa = portaudio;
+    pa::Portaudio p;
+    pa::StreamSetupInfo myinfo;
+    auto ffs = portaudio::streamParamsDefault(p);
+    myinfo.outParams = &ffs;
+
+    try
+    {
+        myCallbackClass mycb;
+        p.openAndRunStream(myinfo, mycb);
+        puts("Stream complete.\n");
+    }
+    catch (const pa::Exception &e)
+    {
+        std::cerr << e.what() << std::endl;
+        assert("Did not expect simple callback openAndRunStream to fail." ==
+               nullptr);
+    }
+}
+
 int main(int, char **)
 {
 
@@ -260,11 +298,13 @@ int main(int, char **)
     test_my_exceptions();
     test_setup_teardown();
 
-    test_simple_play(1);
     test_dual_play(1);
 
     {
         portaudio::Portaudio paObj;
         test_advanced_play(paObj, 48000);
     }
+
+    test_simple_play(1);
+    test_callback_stream();
 }

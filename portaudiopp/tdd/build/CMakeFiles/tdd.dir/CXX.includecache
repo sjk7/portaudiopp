@@ -21,6 +21,8 @@ iostream
 -
 math.h
 -
+memory
+-
 portaudio.h
 -
 sstream
