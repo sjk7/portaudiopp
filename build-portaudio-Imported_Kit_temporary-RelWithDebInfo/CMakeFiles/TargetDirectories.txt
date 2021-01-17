@@ -1,0 +1,9 @@
+/Users/stevekerr/Documents/portaudiopp/build-portaudio-Imported_Kit_temporary-RelWithDebInfo/CMakeFiles/list_install_components.dir
+/Users/stevekerr/Documents/portaudiopp/build-portaudio-Imported_Kit_temporary-RelWithDebInfo/CMakeFiles/install/strip.dir
+/Users/stevekerr/Documents/portaudiopp/build-portaudio-Imported_Kit_temporary-RelWithDebInfo/CMakeFiles/install.dir
+/Users/stevekerr/Documents/portaudiopp/build-portaudio-Imported_Kit_temporary-RelWithDebInfo/CMakeFiles/uninstall.dir
+/Users/stevekerr/Documents/portaudiopp/build-portaudio-Imported_Kit_temporary-RelWithDebInfo/CMakeFiles/portaudio_static.dir
+/Users/stevekerr/Documents/portaudiopp/build-portaudio-Imported_Kit_temporary-RelWithDebInfo/CMakeFiles/rebuild_cache.dir
+/Users/stevekerr/Documents/portaudiopp/build-portaudio-Imported_Kit_temporary-RelWithDebInfo/CMakeFiles/edit_cache.dir
+/Users/stevekerr/Documents/portaudiopp/build-portaudio-Imported_Kit_temporary-RelWithDebInfo/CMakeFiles/install/local.dir
+/Users/stevekerr/Documents/portaudiopp/build-portaudio-Imported_Kit_temporary-RelWithDebInfo/CMakeFiles/portaudio.dir

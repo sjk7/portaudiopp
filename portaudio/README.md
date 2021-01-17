@@ -60,3 +60,8 @@ Please feel free to join. See http://www.portaudio.com for details.
     test/patest_sine.c     = output a sine wave in a simple PA app
     test/patest_sync.c     = test synchronization of audio and video
     test/patest_wire.c     = pass input to output, wire simulator
+
+#### compiling under Big Sur (assuming you want the x86_64 build,
+which, if you are using QtCreator, you DO:)
+cmake -DCMAKE_OSX_ARCHITECTURES=x86_64 ../
+

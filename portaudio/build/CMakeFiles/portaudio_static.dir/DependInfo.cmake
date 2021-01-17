@@ -4,29 +4,29 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_C
-  "/home/steve/Documents/portAudio++/portaudio/src/common/pa_allocation.c" "/home/steve/Documents/portAudio++/portaudio/build/CMakeFiles/portaudio_static.dir/src/common/pa_allocation.c.o"
-  "/home/steve/Documents/portAudio++/portaudio/src/common/pa_converters.c" "/home/steve/Documents/portAudio++/portaudio/build/CMakeFiles/portaudio_static.dir/src/common/pa_converters.c.o"
-  "/home/steve/Documents/portAudio++/portaudio/src/common/pa_cpuload.c" "/home/steve/Documents/portAudio++/portaudio/build/CMakeFiles/portaudio_static.dir/src/common/pa_cpuload.c.o"
-  "/home/steve/Documents/portAudio++/portaudio/src/common/pa_debugprint.c" "/home/steve/Documents/portAudio++/portaudio/build/CMakeFiles/portaudio_static.dir/src/common/pa_debugprint.c.o"
-  "/home/steve/Documents/portAudio++/portaudio/src/common/pa_dither.c" "/home/steve/Documents/portAudio++/portaudio/build/CMakeFiles/portaudio_static.dir/src/common/pa_dither.c.o"
-  "/home/steve/Documents/portAudio++/portaudio/src/common/pa_front.c" "/home/steve/Documents/portAudio++/portaudio/build/CMakeFiles/portaudio_static.dir/src/common/pa_front.c.o"
-  "/home/steve/Documents/portAudio++/portaudio/src/common/pa_process.c" "/home/steve/Documents/portAudio++/portaudio/build/CMakeFiles/portaudio_static.dir/src/common/pa_process.c.o"
-  "/home/steve/Documents/portAudio++/portaudio/src/common/pa_ringbuffer.c" "/home/steve/Documents/portAudio++/portaudio/build/CMakeFiles/portaudio_static.dir/src/common/pa_ringbuffer.c.o"
-  "/home/steve/Documents/portAudio++/portaudio/src/common/pa_stream.c" "/home/steve/Documents/portAudio++/portaudio/build/CMakeFiles/portaudio_static.dir/src/common/pa_stream.c.o"
-  "/home/steve/Documents/portAudio++/portaudio/src/common/pa_trace.c" "/home/steve/Documents/portAudio++/portaudio/build/CMakeFiles/portaudio_static.dir/src/common/pa_trace.c.o"
-  "/home/steve/Documents/portAudio++/portaudio/src/hostapi/alsa/pa_linux_alsa.c" "/home/steve/Documents/portAudio++/portaudio/build/CMakeFiles/portaudio_static.dir/src/hostapi/alsa/pa_linux_alsa.c.o"
-  "/home/steve/Documents/portAudio++/portaudio/src/hostapi/jack/pa_jack.c" "/home/steve/Documents/portAudio++/portaudio/build/CMakeFiles/portaudio_static.dir/src/hostapi/jack/pa_jack.c.o"
-  "/home/steve/Documents/portAudio++/portaudio/src/hostapi/skeleton/pa_hostapi_skeleton.c" "/home/steve/Documents/portAudio++/portaudio/build/CMakeFiles/portaudio_static.dir/src/hostapi/skeleton/pa_hostapi_skeleton.c.o"
-  "/home/steve/Documents/portAudio++/portaudio/src/os/unix/pa_unix_hostapis.c" "/home/steve/Documents/portAudio++/portaudio/build/CMakeFiles/portaudio_static.dir/src/os/unix/pa_unix_hostapis.c.o"
-  "/home/steve/Documents/portAudio++/portaudio/src/os/unix/pa_unix_util.c" "/home/steve/Documents/portAudio++/portaudio/build/CMakeFiles/portaudio_static.dir/src/os/unix/pa_unix_util.c.o"
+  "/Users/stevekerr/Documents/portaudiopp/portaudio/src/common/pa_allocation.c" "/Users/stevekerr/Documents/portaudiopp/portaudio/build/CMakeFiles/portaudio_static.dir/src/common/pa_allocation.c.o"
+  "/Users/stevekerr/Documents/portaudiopp/portaudio/src/common/pa_converters.c" "/Users/stevekerr/Documents/portaudiopp/portaudio/build/CMakeFiles/portaudio_static.dir/src/common/pa_converters.c.o"
+  "/Users/stevekerr/Documents/portaudiopp/portaudio/src/common/pa_cpuload.c" "/Users/stevekerr/Documents/portaudiopp/portaudio/build/CMakeFiles/portaudio_static.dir/src/common/pa_cpuload.c.o"
+  "/Users/stevekerr/Documents/portaudiopp/portaudio/src/common/pa_debugprint.c" "/Users/stevekerr/Documents/portaudiopp/portaudio/build/CMakeFiles/portaudio_static.dir/src/common/pa_debugprint.c.o"
+  "/Users/stevekerr/Documents/portaudiopp/portaudio/src/common/pa_dither.c" "/Users/stevekerr/Documents/portaudiopp/portaudio/build/CMakeFiles/portaudio_static.dir/src/common/pa_dither.c.o"
+  "/Users/stevekerr/Documents/portaudiopp/portaudio/src/common/pa_front.c" "/Users/stevekerr/Documents/portaudiopp/portaudio/build/CMakeFiles/portaudio_static.dir/src/common/pa_front.c.o"
+  "/Users/stevekerr/Documents/portaudiopp/portaudio/src/common/pa_process.c" "/Users/stevekerr/Documents/portaudiopp/portaudio/build/CMakeFiles/portaudio_static.dir/src/common/pa_process.c.o"
+  "/Users/stevekerr/Documents/portaudiopp/portaudio/src/common/pa_ringbuffer.c" "/Users/stevekerr/Documents/portaudiopp/portaudio/build/CMakeFiles/portaudio_static.dir/src/common/pa_ringbuffer.c.o"
+  "/Users/stevekerr/Documents/portaudiopp/portaudio/src/common/pa_stream.c" "/Users/stevekerr/Documents/portaudiopp/portaudio/build/CMakeFiles/portaudio_static.dir/src/common/pa_stream.c.o"
+  "/Users/stevekerr/Documents/portaudiopp/portaudio/src/common/pa_trace.c" "/Users/stevekerr/Documents/portaudiopp/portaudio/build/CMakeFiles/portaudio_static.dir/src/common/pa_trace.c.o"
+  "/Users/stevekerr/Documents/portaudiopp/portaudio/src/hostapi/coreaudio/pa_mac_core.c" "/Users/stevekerr/Documents/portaudiopp/portaudio/build/CMakeFiles/portaudio_static.dir/src/hostapi/coreaudio/pa_mac_core.c.o"
+  "/Users/stevekerr/Documents/portaudiopp/portaudio/src/hostapi/coreaudio/pa_mac_core_blocking.c" "/Users/stevekerr/Documents/portaudiopp/portaudio/build/CMakeFiles/portaudio_static.dir/src/hostapi/coreaudio/pa_mac_core_blocking.c.o"
+  "/Users/stevekerr/Documents/portaudiopp/portaudio/src/hostapi/coreaudio/pa_mac_core_utilities.c" "/Users/stevekerr/Documents/portaudiopp/portaudio/build/CMakeFiles/portaudio_static.dir/src/hostapi/coreaudio/pa_mac_core_utilities.c.o"
+  "/Users/stevekerr/Documents/portaudiopp/portaudio/src/hostapi/skeleton/pa_hostapi_skeleton.c" "/Users/stevekerr/Documents/portaudiopp/portaudio/build/CMakeFiles/portaudio_static.dir/src/hostapi/skeleton/pa_hostapi_skeleton.c.o"
+  "/Users/stevekerr/Documents/portaudiopp/portaudio/src/os/unix/pa_unix_hostapis.c" "/Users/stevekerr/Documents/portaudiopp/portaudio/build/CMakeFiles/portaudio_static.dir/src/os/unix/pa_unix_hostapis.c.o"
+  "/Users/stevekerr/Documents/portaudiopp/portaudio/src/os/unix/pa_unix_util.c" "/Users/stevekerr/Documents/portaudiopp/portaudio/build/CMakeFiles/portaudio_static.dir/src/os/unix/pa_unix_util.c.o"
   )
-set(CMAKE_C_COMPILER_ID "GNU")
+set(CMAKE_C_COMPILER_ID "Clang")
 
 # Preprocessor definitions for this target.
 set(CMAKE_TARGET_DEFINITIONS_C
   "PA_LITTLE_ENDIAN"
-  "PA_USE_ALSA"
-  "PA_USE_JACK"
+  "PA_USE_COREAUDIO"
   )
 
 # The include file search paths:

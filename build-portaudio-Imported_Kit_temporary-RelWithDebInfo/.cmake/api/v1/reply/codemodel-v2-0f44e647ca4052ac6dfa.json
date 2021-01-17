@@ -1,0 +1,78 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"hasInstallRule" : true,
+					"minimumCMakeVersion" : 
+					{
+						"string" : "2.8"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2
+					]
+				}
+			],
+			"name" : "RelWithDebInfo",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "portaudio",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "portaudio::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-portaudio-RelWithDebInfo-f325e3e7b15b7e252e7f.json",
+					"name" : "portaudio",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "portaudio_static::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-portaudio_static-RelWithDebInfo-ac80da80e40c49719766.json",
+					"name" : "portaudio_static",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "uninstall::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-uninstall-RelWithDebInfo-6a04c878ae6a3b453f5b.json",
+					"name" : "uninstall",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "/Users/stevekerr/Documents/portaudiopp/build-portaudio-Imported_Kit_temporary-RelWithDebInfo",
+		"source" : "/Users/stevekerr/Documents/portaudiopp/portaudio"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 2
+	}
+}

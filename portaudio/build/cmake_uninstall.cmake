@@ -1,14 +1,14 @@
-if(NOT EXISTS "/home/steve/Documents/portAudio++/portaudio/build/install_manifest.txt")
-  message(FATAL_ERROR "Cannot find install manifest: /home/steve/Documents/portAudio++/portaudio/build/install_manifest.txt")
-endif(NOT EXISTS "/home/steve/Documents/portAudio++/portaudio/build/install_manifest.txt")
+if(NOT EXISTS "/Users/stevekerr/Documents/portaudiopp/portaudio/build/install_manifest.txt")
+  message(FATAL_ERROR "Cannot find install manifest: /Users/stevekerr/Documents/portaudiopp/portaudio/build/install_manifest.txt")
+endif(NOT EXISTS "/Users/stevekerr/Documents/portaudiopp/portaudio/build/install_manifest.txt")
 
-file(READ "/home/steve/Documents/portAudio++/portaudio/build/install_manifest.txt" files)
+file(READ "/Users/stevekerr/Documents/portaudiopp/portaudio/build/install_manifest.txt" files)
 string(REGEX REPLACE "\n" ";" files "${files}")
 foreach(file ${files})
   message(STATUS "Uninstalling $ENV{DESTDIR}${file}")
   if(IS_SYMLINK "$ENV{DESTDIR}${file}" OR EXISTS "$ENV{DESTDIR}${file}")
     exec_program(
-      "/usr/bin/cmake" ARGS "-E remove \"$ENV{DESTDIR}${file}\""
+      "/opt/homebrew/Cellar/cmake/3.19.3/bin/cmake" ARGS "-E remove \"$ENV{DESTDIR}${file}\""
       OUTPUT_VARIABLE rm_out
       RETURN_VALUE rm_retval
       )

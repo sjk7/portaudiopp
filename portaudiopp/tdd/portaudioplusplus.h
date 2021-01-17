@@ -8,7 +8,7 @@
 #include <iostream>
 #include <math.h>
 #include <memory> // unique_ptr
-#include <portaudio.h>
+#include "../../../portaudio/include/portaudio.h"
 #include <sstream>
 #include <stdexcept>
 #include <string>
@@ -199,7 +199,6 @@ static inline deviceList enum_devices()
     {
         auto inf = Pa_GetDeviceInfo(i);
         PaDeviceInfoEx d{inf, i, {0}};
-
         list.push_back(d);
     }
     return list;
@@ -247,15 +246,9 @@ struct enumerator_t : detail::no_copy<enumerator_t>
                 && !this->m_apiDeviceList.empty()){
             return m_apiDeviceList;
         }
-        const hostApiList &apis = this->apis(force_refresh);
-        volatile size_t apis_sz = apis.size();
-        (void)apis_sz; // do not optimize away.
-        const auto& devs_const = this->devices(force_refresh);
-        volatile size_t sz = devs_const.size(); // do not optimize away
-        (void)sz;
+        this->apis(force_refresh);
+        this->devices(force_refresh);
         apiDeviceList retval;
-        const auto total_devs = Pa_GetDeviceCount();
-        (void)total_devs;
 
         for (auto& api : m_apis)
         {
@@ -270,7 +263,7 @@ struct enumerator_t : detail::no_copy<enumerator_t>
                 it = pr.first;
             }
 
-            for (int i = 0; i < api.info->deviceCount - 1; ++i){
+            for (int i = 0; i < api.info->deviceCount; ++i){
                 const auto global_index = Pa_HostApiDeviceIndexToDeviceIndex(api.api_index, i);
                 auto& dev = m_devices.at(global_index);
                 std::string name(dev.info->name);
@@ -282,27 +275,6 @@ struct enumerator_t : detail::no_copy<enumerator_t>
                 it->second.push_back(dev);
             }
         };
-
-        const auto def_index = Pa_GetDefaultHostApi();
-        assert((size_t)def_index < m_apis.size());
-        auto& def_host_api =m_apis.at(def_index);
-        std::string def_name =std::string(def_host_api.info->name);
-        auto pr = retval.find(def_name);
-        auto&  def_host_api_collection = pr->second;
-
-        for (auto& d : this->m_devices){
-            if(d.api_device_index == INVALID_PA_DEVICE_INDEX){
-                assert(d.hostApiInfo == nullptr);
-                std::string name(d.info->name);
-                d.hostApiInfo = &def_host_api;
-                d.api_device_index = def_host_api.info->defaultOutputDevice;
-                def_host_api_collection.push_back (d);
-                if (name == def_name){
-                    def_host_api.defaultDeviceApiIndex = d.api_device_index;
-                }
-
-            }
-        }
 
         for (const auto& a : m_apis){
             assert(a.defaultDeviceApiIndex >= 0);
