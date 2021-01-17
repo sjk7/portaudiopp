@@ -16,6 +16,10 @@
 #include <unordered_map>
 #include <vector>
 
+
+namespace portaudio
+{
+
 namespace strings
 {
 template <typename... Args>
@@ -25,8 +29,54 @@ void make_string(std::ostringstream &stream, Args &&... args) noexcept
 }
 } // namespace strings
 
-namespace portaudio
+namespace dsp
 {
+template <typename T> class smoother
+{
+    T m_destValue;
+    float m_secToDest;
+    int m_steps;
+    float m_samplerate;
+    float m_step = 0;
+    int m_nch = 2;
+    void calc()
+    {
+        if (m_secToDest <= 0 || m_samplerate <= 0) return;
+        m_steps = (m_samplerate / m_secToDest) * m_nch;
+        m_step = m_destValue / m_steps;
+    }
+
+  public:
+    smoother() : m_destValue(0), m_secToDest(0), m_steps(0), m_samplerate(0) {}
+    smoother(T destValue, float secToDest, float samplerate, int nch = 2)
+        : m_destValue(destValue), m_secToDest(secToDest), m_steps(0),
+          m_samplerate(samplerate), m_nch(nch)
+    {
+        calc();
+    }
+    void process_sample(T &sample)
+    {
+        if (m_steps > 0)
+        {
+            sample += m_step;
+            --m_steps;
+        }
+    }
+
+    void processSamples(int nFrames, T *samples, const int nch)
+    {
+        while (nFrames > 0)
+        {
+            for (auto ch = 0; ch < nch; ++ch)
+            {
+                T &val = *samples++;
+                process_sample(val);
+            }
+            --nFrames;
+        }
+    }
+};
+} // namespace dsp
 
 static inline void sleep_ms(const long ms) noexcept { Pa_Sleep(ms); }
 class Exception : public std::runtime_error
