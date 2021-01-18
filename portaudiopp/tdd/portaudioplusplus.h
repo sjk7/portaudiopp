@@ -2,23 +2,30 @@
 // portaudioplusplus header file. Written by Steve. Monday January 11th 2021.
 // A C++ wrapper for Portaudio.
 
+#include "../../../portaudio/include/portaudio.h"
+#include <algorithm> // std::max()
 #include <atomic>
 #include <cassert>
+#include <cmath> // std::abs
 #include <cstring>
 #include <iostream>
+#include <limits> // numeric_limits
 #include <math.h>
 #include <memory> // unique_ptr
-#include "../../../portaudio/include/portaudio.h"
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
 #include <unordered_map>
 #include <vector>
-
-
 namespace portaudio
 {
+
+template <typename Float>
+static inline bool is_almost_equal(const Float f1, const Float f2)
+{
+    return std::abs(f1 - f2) < std::numeric_limits<Float>::epsilon();
+}
 
 namespace strings
 {
@@ -31,34 +38,49 @@ void make_string(std::ostringstream &stream, Args &&... args) noexcept
 
 namespace dsp
 {
-template <typename T> class smoother
+template <typename T> class fader
 {
     T m_destValue;
     float m_secToDest;
     int m_steps;
     float m_samplerate;
+    float m_startValue = 0;
     float m_step = 0;
+    float m_vol = 0;
     int m_nch = 2;
     void calc()
     {
         if (m_secToDest <= 0 || m_samplerate <= 0) return;
-        m_steps = (m_samplerate / m_secToDest) * m_nch;
-        m_step = m_destValue / m_steps;
+        const float fsteps = (m_secToDest * m_samplerate) * m_nch;
+        m_steps = (int)(fsteps + 0.5f);
+        m_step = (m_destValue - m_startValue) / m_steps;
+        m_vol = m_startValue;
     }
 
   public:
-    smoother() : m_destValue(0), m_secToDest(0), m_steps(0), m_samplerate(0) {}
-    smoother(T destValue, float secToDest, float samplerate, int nch = 2)
+    fader() : m_destValue(0), m_secToDest(0), m_steps(0), m_samplerate(0) {}
+    fader(T destValue, float secToDest, float samplerate, int nch = 2)
         : m_destValue(destValue), m_secToDest(secToDest), m_steps(0),
           m_samplerate(samplerate), m_nch(nch)
     {
         calc();
     }
-    void process_sample(T &sample)
+
+    T volume() const noexcept { return m_vol; }
+    void arm(T startVal, T destval, float samplerate, float secToDest)
+    {
+        m_startValue = startVal;
+        m_destValue = destval;
+        m_samplerate = samplerate;
+        m_secToDest = secToDest;
+        calc();
+    }
+    void processSample(T &sample)
     {
         if (m_steps > 0)
         {
-            sample += m_step;
+            sample *= m_vol;
+            m_vol += m_step;
             --m_steps;
         }
     }
@@ -67,14 +89,34 @@ template <typename T> class smoother
     {
         while (nFrames > 0)
         {
-            for (auto ch = 0; ch < nch; ++ch)
+            if (active())
             {
-                T &val = *samples++;
-                process_sample(val);
+                for (auto ch = 0; ch < nch; ++ch)
+                {
+                    T &val = *samples++;
+                    processSample(val);
+                }
+                nFrames--;
             }
-            --nFrames;
-        }
+            else
+            {
+                if (!is_almost_equal(1.0f, m_destValue))
+                {
+                    for (auto ch = 0; ch < nch; ++ch)
+                    {
+                        *samples = *samples++ * m_destValue;
+                    }
+                    nFrames--;
+                }
+                else
+                {
+                    return; // nothing to do here: just multiply by one.
+                }
+            }
+        };
     }
+
+    bool active() const noexcept { return m_steps > 0; }
 };
 } // namespace dsp
 
@@ -365,19 +407,14 @@ struct enumerator_t : detail::no_copy<enumerator_t>
     mutable hostApiList m_apis;
     mutable deviceList m_devices;
     mutable apiDeviceList m_apiDeviceList;
-    deviceList& devices_non_const() noexcept {
-        return m_devices;
-    }
-
-
+    deviceList &devices_non_const() noexcept { return m_devices; }
 };
 
-
-
-static inline StreamSetupInfo makeStreamSetupInfo(int samplerate = 44100,
-                                    PaSampleFormat fmt = SampleFormat::Float32,
-                                    PaStreamParameters *inParams = nullptr,
-                                    PaStreamParameters *outParams = nullptr)
+[[maybe_unused]] static inline StreamSetupInfo
+makeStreamSetupInfo(int samplerate = 44100,
+                    PaSampleFormat fmt = SampleFormat::Float32,
+                    PaStreamParameters *inParams = nullptr,
+                    PaStreamParameters *outParams = nullptr)
 {
     StreamSetupInfo s;
     if (samplerate > 0) s.samplerate = samplerate;
@@ -448,7 +485,7 @@ template <typename AUDIOCALLBACK> class Stream : public detail::TimeStampGen
 {
   private:
     StreamSetupInfo m_info;
-    std::atomic<int> m_runstate;
+    std::atomic<int> m_runstate{0};
 
     static inline int
     callback_dispatcher(const void *input, void *output,
@@ -460,9 +497,17 @@ template <typename AUDIOCALLBACK> class Stream : public detail::TimeStampGen
         assert(p && "stream context not set. FATAL");
 
         const auto elapsed_time = p->generateTimeStamps(frameCount);
-        return (int)p->m_cb({elapsed_time, input, output, frameCount, timeInfo,
-                             statusFlags, userData, p->samplerate()});
+        const auto ret =
+            p->m_cb({elapsed_time, input, output, frameCount, timeInfo,
+                     statusFlags, userData, p->samplerate()});
+        if (p->m_fader.active())
+        {
+            p->m_fader.processSamples(frameCount, (float *)output,
+                                      p->m_info.outputChannelCount);
+        }
+        return (int)ret;
     }
+    dsp::fader<float> m_fader;
 
   public:
     Stream(StreamSetupInfo &info, AUDIOCALLBACK &&cb) : m_info(info), m_cb(cb)
@@ -576,28 +621,49 @@ template <typename AUDIOCALLBACK> class Stream : public detail::TimeStampGen
         TimeStampGen::reset(info.samplerate);
     }
 
-    void Stop()
+    void Stop(float fadeOutSecs = 0.1)
     {
         TimeStampGen::reset(m_info.samplerate);
         if (!m_info.stream)
         {
             throw Exception(-1, "Stop(): unexpected: no stream to start");
         }
+
+        if (m_runstate)
+        {
+            m_fader.arm(m_fader.volume(), 0, (float)this->samplerate(),
+                        fadeOutSecs);
+
+            int slept = 0;
+            while (m_fader.active())
+            {
+                Pa_Sleep(10);
+                slept += 10;
+                if (slept >= 1000)
+                {
+                    break;
+                }
+            }
+        }
         int ret = Pa_StopStream(m_info.stream);
         if (ret && ret != paStreamIsStopped)
         {
             throw Exception(ret, "Error Stopping Stream");
         }
+
         m_runstate = 0;
     }
 
-    void Start()
+    void Start(float fadeInSecs = 0.5)
     {
         TimeStampGen::reset(m_info.samplerate);
+
         if (!m_info.stream)
         {
             throw Exception(-1, "Start(): unexpected: no stream to start");
         }
+
+        m_fader.arm(0.0f, 1.0f, (float)this->samplerate(), fadeInSecs);
         int ret = Pa_StartStream(m_info.stream);
         if (ret)
         {
@@ -619,6 +685,13 @@ template <typename AUDIOCALLBACK> class Stream : public detail::TimeStampGen
     {
         if (m_info.stream)
         {
+            try
+            {
+                Stop(0.1);
+            }
+            catch (...)
+            {
+            }
             Pa_CloseStream(m_info.stream);
             m_info.stream = nullptr;
         }
@@ -714,8 +787,8 @@ class Portaudio
     mutable enumerator_t m_enum;
 };
 
-static inline auto streamParamsDefault(const Portaudio &pa,
-                                       PaDeviceInfoEx *device = nullptr)
+[[maybe_unused]] static inline auto
+streamParamsDefault(const Portaudio &pa, PaDeviceInfoEx *device = nullptr)
 {
     PaStreamParameters params = {0, 0, 0, 0, 0};
 
@@ -735,11 +808,9 @@ static inline float next_sine_sample(uint64_t sample_num, int samplerate,
     return sin(freq * 2 * M_PI * sample_num / samplerate);
 }
 
-
-static inline void fill_buffer_sine(uint64_t &nsample,
-                                    portaudio::CallbackInfo &info,
-                                    bool left = true, bool right = true,
-                                    int freq = 440)
+[[maybe_unused]] static inline void
+fill_buffer_sine(uint64_t &nsample, portaudio::CallbackInfo &info,
+                 bool left = true, bool right = true, int freq = 440)
 {
     float* out = (float*)info.output;
     for (uint64_t i = 0; i < info.frameCount; i++)

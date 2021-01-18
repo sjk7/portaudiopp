@@ -23,7 +23,9 @@ private slots:
 
     void on_btnTest_clicked();
 
-private:
+    void on_btnTest_toggled(bool checked);
+
+  private:
     Ui::Dialog *ui;
     portaudio::Portaudio m_portaudio;
     void showEvent( QShowEvent* event ) {

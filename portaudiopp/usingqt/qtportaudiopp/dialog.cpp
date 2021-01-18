@@ -110,39 +110,61 @@ void Dialog::on_cboDevice_currentIndexChanged(int index)
 
 void Dialog::on_btnTest_clicked()
 {
-    if (m_device.global_device_index == portaudio::INVALID_PA_DEVICE_INDEX){
-        QMessageBox::critical(this, "No Selected device", "There is no device selected, so cannot test");
-    } else{
-        PaStreamParameters params = portaudio::streamParamsDefault(m_portaudio, &m_device);
+
+}
+
+void Dialog::on_btnTest_toggled(bool checked)
+{
+    if (m_device.global_device_index == portaudio::INVALID_PA_DEVICE_INDEX)
+    {
+        QMessageBox::critical(this, "No Selected device",
+                              "There is no device selected, so cannot test");
+    }
+    else
+    {
+        PaStreamParameters params =
+            portaudio::streamParamsDefault(m_portaudio, &m_device);
 
         m_device.streamSetupInfo.outParams = &params;
         uint64_t n = 0;
+        if (checked)
+        {
+            try
+            {
+                auto s = m_portaudio.openStream(
+                    m_device, [&](portaudio::CallbackInfo info) {
+                        portaudio::fill_buffer_sine(n, info);
+                        return portaudio::CallbackResult::Continue;
+                    });
 
-        try{
-        auto s = m_portaudio.openStream(m_device, [&](portaudio::CallbackInfo info){
-            portaudio::fill_buffer_sine(n, info);
-            return portaudio::CallbackResult::Continue;
-        });
+                Log("Playing tone to device: " + QString(m_device.info->name) +
+                    " ...");
 
-        Log ("Playing tone to device: " + QString(m_device.info->name) + " ...");
+                this->ui->cboDevice->setEnabled(false);
+                this->ui->cboHostApi->setEnabled(false);
+                s.Start();
+                while (this->ui->btnTest->isChecked())
+                {
+                    portaudio::sleep_ms(10);
+                    QCoreApplication::processEvents();
+                };
 
-        this->ui->cboDevice->setEnabled(false);
-        this->ui->cboHostApi->setEnabled(false);
-        s.Start();
-        while (this->ui->btnTest->isChecked()){
-            portaudio::sleep_ms(10);
-            QCoreApplication::processEvents();
-        };
+                s.Stop(0.2);
+                this->ui->cboDevice->setEnabled(true);
+                this->ui->cboHostApi->setEnabled(true);
 
-        this->ui->cboDevice->setEnabled(true);
-        this->ui->cboHostApi->setEnabled(true);
-
-        Log ("Playing tone to device: " + QString(m_device.info->name) + " Complete.");
+                Log("Playing tone to device: " + QString(m_device.info->name) +
+                    " Complete.");
+            }
+            catch (const portaudio::Exception &e)
+            {
+                Log("Error! Opening device " + QString(m_device.info->name) +
+                    " failed" + QString(e.what()));
+            }
         }
-        catch(const portaudio::Exception& e){
-            Log("Error! Opening device " + QString(m_device.info->name) + " failed" + QString(e.what()));
+        else
+        {
+            // unchecked
         }
-
-
     }
 }
