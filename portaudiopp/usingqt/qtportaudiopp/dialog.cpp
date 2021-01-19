@@ -143,15 +143,17 @@ void Dialog::on_btnTest_toggled(bool checked)
                 this->ui->cboDevice->setEnabled(false);
                 this->ui->cboHostApi->setEnabled(false);
                 s.Start();
+                this->ui->btnTest->setText("Playing tone. Click again to stop");
                 while (this->ui->btnTest->isChecked())
                 {
                     portaudio::sleep_ms(10);
                     QCoreApplication::processEvents();
                 };
 
-                s.Stop(0.2);
+                s.Stop();
                 this->ui->cboDevice->setEnabled(true);
                 this->ui->cboHostApi->setEnabled(true);
+                this->ui->btnTest->setText("Test");
 
                 Log("Playing tone to device: " + QString(m_device.info->name) +
                     " Complete.");

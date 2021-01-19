@@ -46,7 +46,7 @@ public:
         Dialog->resize(800, 371);
         layoutWidget = new QWidget(Dialog);
         layoutWidget->setObjectName(QString::fromUtf8("layoutWidget"));
-        layoutWidget->setGeometry(QRect(13, 32, 761, 52));
+        layoutWidget->setGeometry(QRect(13, 32, 761, 57));
         horizontalLayout = new QHBoxLayout(layoutWidget);
         horizontalLayout->setObjectName(QString::fromUtf8("horizontalLayout"));
         horizontalLayout->setContentsMargins(0, 0, 0, 0);
@@ -98,7 +98,7 @@ public:
 
         btnTest = new QPushButton(Dialog);
         btnTest->setObjectName(QString::fromUtf8("btnTest"));
-        btnTest->setGeometry(QRect(310, 110, 80, 25));
+        btnTest->setGeometry(QRect(249, 100, 291, 25));
         btnTest->setCheckable(true);
 
         retranslateUi(Dialog);

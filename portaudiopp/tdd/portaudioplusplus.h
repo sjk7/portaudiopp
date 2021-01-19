@@ -38,11 +38,16 @@ void make_string(std::ostringstream &stream, Args &&... args) noexcept
 
 namespace dsp
 {
+#ifdef MSC_VER
+#define PA_FORCE_INLINE __force_inline__
+#else
+#define PA_FORCE_INLINE __attribute__((always_inline))
+#endif
 template <typename T> class fader
 {
     T m_destValue;
     float m_secToDest;
-    int m_steps;
+    std::atomic<int> m_steps;
     float m_samplerate;
     float m_startValue = 0;
     float m_step = 0;
@@ -61,27 +66,34 @@ template <typename T> class fader
     fader() : m_destValue(0), m_secToDest(0), m_steps(0), m_samplerate(0) {}
     fader(T destValue, float secToDest, float samplerate, int nch = 2)
         : m_destValue(destValue), m_secToDest(secToDest), m_steps(0),
-          m_samplerate(samplerate), m_nch(nch)
+          m_samplerate(samplerate), m_nch(nch), m_vol(0)
     {
         calc();
     }
 
     T volume() const noexcept { return m_vol; }
-    void arm(T startVal, T destval, float samplerate, float secToDest)
+    void arm(T destval, float samplerate, float secToDest)
     {
-        m_startValue = startVal;
+        m_startValue = m_vol;
         m_destValue = destval;
         m_samplerate = samplerate;
         m_secToDest = secToDest;
         calc();
     }
-    void processSample(T &sample)
+
+    PA_FORCE_INLINE void processSample(T &sample)
     {
         if (m_steps > 0)
         {
             sample *= m_vol;
             m_vol += m_step;
+            if (m_vol < 0) m_vol = 0;
             --m_steps;
+            if (m_steps <= 0)
+            {
+                m_vol = this->m_destValue;
+                return;
+            }
         }
     }
 
@@ -104,7 +116,8 @@ template <typename T> class fader
                 {
                     for (auto ch = 0; ch < nch; ++ch)
                     {
-                        *samples = *samples++ * m_destValue;
+                        *samples = *samples * m_vol;
+                        ++samples;
                     }
                     nFrames--;
                 }
@@ -621,7 +634,7 @@ template <typename AUDIOCALLBACK> class Stream : public detail::TimeStampGen
         TimeStampGen::reset(info.samplerate);
     }
 
-    void Stop(float fadeOutSecs = 0.1)
+    void Stop(float fadeOutSecs = 0.25)
     {
         TimeStampGen::reset(m_info.samplerate);
         if (!m_info.stream)
@@ -631,20 +644,20 @@ template <typename AUDIOCALLBACK> class Stream : public detail::TimeStampGen
 
         if (m_runstate)
         {
-            m_fader.arm(m_fader.volume(), 0, (float)this->samplerate(),
-                        fadeOutSecs);
+            m_fader.arm(0, (float)this->samplerate(), fadeOutSecs);
 
             int slept = 0;
             while (m_fader.active())
             {
                 Pa_Sleep(10);
                 slept += 10;
-                if (slept >= 1000)
+                if (slept >= 5000)
                 {
                     break;
                 }
-            }
+            };
         }
+
         int ret = Pa_StopStream(m_info.stream);
         if (ret && ret != paStreamIsStopped)
         {
@@ -654,7 +667,7 @@ template <typename AUDIOCALLBACK> class Stream : public detail::TimeStampGen
         m_runstate = 0;
     }
 
-    void Start(float fadeInSecs = 0.5)
+    void Start(float fadeInSecs = 0.1)
     {
         TimeStampGen::reset(m_info.samplerate);
 
@@ -663,7 +676,7 @@ template <typename AUDIOCALLBACK> class Stream : public detail::TimeStampGen
             throw Exception(-1, "Start(): unexpected: no stream to start");
         }
 
-        m_fader.arm(0.0f, 1.0f, (float)this->samplerate(), fadeInSecs);
+        m_fader.arm(1.0f, (float)this->samplerate(), fadeInSecs);
         int ret = Pa_StartStream(m_info.stream);
         if (ret)
         {
@@ -687,7 +700,7 @@ template <typename AUDIOCALLBACK> class Stream : public detail::TimeStampGen
         {
             try
             {
-                Stop(0.1);
+                Stop(0.5);
             }
             catch (...)
             {
