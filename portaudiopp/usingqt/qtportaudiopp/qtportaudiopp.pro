@@ -24,7 +24,16 @@ HEADERS += \
 FORMS += \
     dialog.ui
 
-LIBS += ../../../portaudio/build/libportaudio.dylib
+macx {
+    LIBS += ../../../portaudio/build/libportaudio.dylib
+}
+unix{
+LIBS += -lportaudio
+}
+win32{
+    LIBS += ../../../portaudio/build/libportaudio.a
+}
+
 #LIBS += -lportaudio
 
 # Default rules for deployment.

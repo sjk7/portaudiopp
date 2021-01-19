@@ -17,7 +17,7 @@ CXX           = g++
 DEFINES       = -DQT_QML_DEBUG -DQT_WIDGETS_LIB -DQT_GUI_LIB -DQT_CORE_LIB
 CFLAGS        = -pipe -g -Wall -Wextra -D_REENTRANT -fPIC $(DEFINES)
 CXXFLAGS      = -pipe -g -std=gnu++1z -Wall -Wextra -D_REENTRANT -fPIC $(DEFINES)
-INCPATH       = -I../qtportaudiopp -I. -I../../tdd -I/home/steve/Qt/5.15.2/gcc_64/include -I/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets -I/home/steve/Qt/5.15.2/gcc_64/include/QtGui -I/home/steve/Qt/5.15.2/gcc_64/include/QtCore -I. -I/usr/include/libdrm -I. -I/home/steve/Qt/5.15.2/gcc_64/mkspecs/linux-g++
+INCPATH       = -I../qtportaudiopp -I. -I../../tdd -I../../../portaudio/include -I/home/steve/Qt/5.15.2/gcc_64/include -I/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets -I/home/steve/Qt/5.15.2/gcc_64/include/QtGui -I/home/steve/Qt/5.15.2/gcc_64/include/QtCore -I. -I/usr/include/libdrm -I. -I/home/steve/Qt/5.15.2/gcc_64/mkspecs/linux-g++
 QMAKE         = /home/steve/Qt/5.15.2/gcc_64/bin/qmake
 DEL_FILE      = rm -f
 CHK_DIR_EXISTS= test -d
@@ -764,9 +764,10 @@ moc_dialog.cpp: ../qtportaudiopp/dialog.h \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qvector2d.h \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qtouchdevice.h \
 		../../tdd/portaudioplusplus.h \
+		../../../portaudio/include/portaudio.h \
 		moc_predefs.h \
 		/home/steve/Qt/5.15.2/gcc_64/bin/moc
-	/home/steve/Qt/5.15.2/gcc_64/bin/moc $(DEFINES) --include /home/steve/Documents/portAudio++/portaudiopp/usingqt/build-qtportaudiopp-Desktop_Qt_5_15_2_GCC_64bit-Debug/moc_predefs.h -I/home/steve/Qt/5.15.2/gcc_64/mkspecs/linux-g++ -I/home/steve/Documents/portAudio++/portaudiopp/usingqt/qtportaudiopp -I/home/steve/Documents/portAudio++/portaudiopp/tdd -I/home/steve/Qt/5.15.2/gcc_64/include -I/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets -I/home/steve/Qt/5.15.2/gcc_64/include/QtGui -I/home/steve/Qt/5.15.2/gcc_64/include/QtCore -I. -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include ../qtportaudiopp/dialog.h -o moc_dialog.cpp
+	/home/steve/Qt/5.15.2/gcc_64/bin/moc $(DEFINES) --include /home/steve/Documents/portAudio++/portaudiopp/usingqt/build-qtportaudiopp-Desktop_Qt_5_15_2_GCC_64bit-Debug/moc_predefs.h -I/home/steve/Qt/5.15.2/gcc_64/mkspecs/linux-g++ -I/home/steve/Documents/portAudio++/portaudiopp/usingqt/qtportaudiopp -I/home/steve/Documents/portAudio++/portaudiopp/tdd -I/home/steve/Documents/portAudio++/portaudio/include -I/home/steve/Qt/5.15.2/gcc_64/include -I/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets -I/home/steve/Qt/5.15.2/gcc_64/include/QtGui -I/home/steve/Qt/5.15.2/gcc_64/include/QtCore -I. -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include ../qtportaudiopp/dialog.h -o moc_dialog.cpp
 
 compiler_moc_objc_header_make_all:
 compiler_moc_objc_header_clean:
@@ -895,6 +896,7 @@ main.o: ../qtportaudiopp/main.cpp ../qtportaudiopp/dialog.h \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qvector2d.h \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qtouchdevice.h \
 		../../tdd/portaudioplusplus.h \
+		../../../portaudio/include/portaudio.h \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/QApplication \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/qapplication.h \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qcoreapplication.h \
@@ -1010,6 +1012,7 @@ dialog.o: ../qtportaudiopp/dialog.cpp ../qtportaudiopp/dialog.h \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qvector2d.h \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qtouchdevice.h \
 		../../tdd/portaudioplusplus.h \
+		../../../portaudio/include/portaudio.h \
 		ui_dialog.h \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/QVariant \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/QApplication \
@@ -1035,11 +1038,11 @@ dialog.o: ../qtportaudiopp/dialog.cpp ../qtportaudiopp/dialog.h \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/qrubberband.h \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/qframe.h \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qabstractitemmodel.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/QHBoxLayout \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/qboxlayout.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/QGridLayout \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/qgridlayout.h \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/qlayout.h \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/qlayoutitem.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/qgridlayout.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/qboxlayout.h \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/QLabel \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/qlabel.h \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/QListWidget \
@@ -1051,6 +1054,7 @@ dialog.o: ../qtportaudiopp/dialog.cpp ../qtportaudiopp/dialog.h \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/QPushButton \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/qpushbutton.h \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/qabstractbutton.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/QSpacerItem \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/QVBoxLayout \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/QWidget \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/QDateTime \

@@ -9,6 +9,7 @@ Dialog::Dialog(QWidget *parent)
     , ui(new Ui::Dialog), m_portaudio("QtTest")
 {
     ui->setupUi(this);
+    this->setWindowTitle("Portaudio Devices Tester");
 
 }
 
@@ -20,13 +21,34 @@ Dialog::~Dialog()
 void Dialog::Pasetup()
 {
     ui->cboHostApi->clear();
-    ui->cboDevice->clear();
+    ui->cboInput->clear();
+    ui->cboOutput->clear();
     for (const auto& d : m_portaudio.enumerator().apis()){
        ui->cboHostApi->addItem(d.info->name);
     }
 
-    ui->cboHostApi->setCurrentIndex(0);
+    auto def_api_name = m_portaudio.enumerator().defaultHostApi().info->name;
+    auto def_api = m_portaudio.enumerator().findApi(def_api_name);
 
+    ui->cboHostApi->setCurrentIndex(def_api->api_index);
+}
+
+
+void Dialog::on_cboHostApi_currentIndexChanged(int index)
+{
+    m_hostApiIndex = index;
+    popDevices(index);
+
+}
+
+void Dialog::popDevices(const portaudio::deviceList& devices, QComboBox* cbo){
+    cbo->clear();
+    m_bpopping = true;
+    for (const auto& d : devices){
+        cbo->addItem(d.info->name);
+    }
+
+    m_bpopping = false;
 }
 
 void Dialog::Log(const QString& s)
@@ -38,83 +60,99 @@ void Dialog::Log(const QString& s)
     ui->listWidget->repaint();
 }
 
-void Dialog::popDevices(int apiIndex, const QString &selApi)
-{
-    ui->cboDevice->clear();
-    const auto& devsbyapi = m_portaudio.enumerator().devicesByApi();
-    const auto apiName = m_portaudio.enumerator().apis().at(apiIndex).info->name;
-    Log("Found Portaudio HostAPI with name: " + QString(apiName) + " at index: " + QString::number(apiIndex));
-    QString myName(apiName);
-    Q_ASSERT(myName == selApi);
-    const auto& found = devsbyapi.find(apiName);
+void Dialog::selectDefaultDevice(const portaudio::PaHostApiInfoEx* api, QComboBox* cbo){
 
-    if (found != devsbyapi.cend()){
-        const auto& pr = *found;
-        const auto& vec = pr.second;
-        Log("Found " + QString::number(vec.size()) + " devices for HostAPI " + myName);
-        for (const auto& d : vec){
-            ui->cboDevice->addItem(d.info->name);
-        }
-        const auto& apis= m_portaudio.enumerator().apis();
-        const auto& cur_api = apis.at(apiIndex);
-        auto def_index = cur_api.defaultDeviceApiIndex;
-        m_bpopping = false;
-
-        const auto n = ui->cboDevice->count();
-        assert(def_index < n);
-        if (def_index == paNoDevice){
-            ui->cboDevice->setCurrentIndex(0);
+    m_bpopping = true;
+    auto idx = 0;
+    if (cbo == ui->cboInput){
+        idx = api->defaultInputDevice()->input_api_device_index;
+    }else if(cbo == ui->cboInput){
+        idx = api->defaultOutputDevice()->output_api_device_index;
+    }else if (cbo == ui->cboDuplex){
+        auto dup = api->defaultDuplexDevice();
+        if (dup){
+            idx = dup->duplex_api_device_index;
         }else{
-            ui->cboDevice->setCurrentIndex(def_index);
+            idx = -1;
         }
-    }else{
-        Log("Error! HostAPI with name: " + QString(apiName) + " Could not find the devices for this HostAPI" );
     }
-}
-
-
-void Dialog::on_cboHostApi_currentIndexChanged(const QString &arg1)
-{
-    Log("HostApi combobox current index changed (" + arg1 + ")");
-    m_hostSelText = arg1;
-    m_bpopping =true;
-    popDevices(ui->cboHostApi->currentIndex(), arg1);
+    cbo->setCurrentIndex(idx);
     m_bpopping = false;
 }
 
-void Dialog::on_cboDevice_currentIndexChanged(int index)
+void Dialog::popDevices(int apiIndex)
 {
-    if (m_bpopping) return;
 
+    ui->cboInput->clear();
+    ui->cboOutput->clear();
+    ui->cboDuplex->clear();
+    const auto& enummer = m_portaudio.enumerator();
+    const auto* api = enummer.findApi(apiIndex);
+    Q_ASSERT(api);
+    popDevices(api->inputDevices(), ui->cboInput);
+    popDevices(api->outputDevices(), ui->cboOutput);
+    popDevices(api->duplexDevices(), ui->cboDuplex);
+    selectDefaultDevice(api, ui->cboInput);
+    selectDefaultDevice(api, ui->cboOutput);
+    selectDefaultDevice(api, ui->cboDuplex);
+
+}
+
+
+QString channels_to_string( const PaDeviceInfo* info){
+    QString out("maxInputChannels = " +
+        QString::number(info->maxInputChannels) +
+        ", maxOutputChannels = " + QString::number(info->maxOutputChannels));
+    return out;
+}
+
+void Dialog::on_cboOutput_currentIndexChanged(int index)
+{
+    this->m_outputDeviceIndex = index;
     if (index >= 0){
-        Log("Device selector current index has changed to: " + QString::number(index));
+        this->Log("Output device index changed to: " + QString::number(index));
+        auto api = m_portaudio.enumerator().findApi(this->m_hostApiIndex);
+        auto dev = m_portaudio.enumerator().findDevice(this->m_hostApiIndex, index, portaudio::DeviceType::types::output);
+        Log("Output device has api: " + QString(api->info->name));
+        Log("Output device name: " + QString(dev->info->name));
+        Log("Output device: " + channels_to_string(dev->info));
+    }
+}
 
-        const auto& devsbyapi = m_portaudio.enumerator().devicesByApi();
-        const auto found = devsbyapi.find(m_hostSelText.toStdString());
-        Q_ASSERT(found != devsbyapi.cend());
-        const auto& pr = *found;
-        const auto& devices = pr.second;
-        const auto& device = devices.at(index);
-        this->m_device = device;
-        Log("Selected device is: " + QString(device.info->name));
-        const auto& apis = m_portaudio.enumerator().apis();
-        const auto& selapi = apis.at(device.info->hostApi);
-        const QString apiName = selapi.info->name;
-        Q_ASSERT(apiName == m_hostSelText);
-        Log("Selected api is: " + apiName);
-    }else{
-        Log("Device selector has nothing selected.");
+// input device
+void Dialog::on_cboInput_currentIndexChanged(int index)
+{
+    this->m_inputDeviceIndex = index;
+    if (index >= 0){
+
+        this->Log("Input device index changed to: " + QString::number(index));
+        auto api = m_portaudio.enumerator().findApi(this->m_hostApiIndex);
+        auto dev = m_portaudio.enumerator().findDevice(this->m_hostApiIndex, index, portaudio::DeviceType::types::input);
+        Log("Input device has api: " + QString(api->info->name));
+        Log("Input device name: " + QString(dev->info->name));
+        Log("Input device: " + channels_to_string(dev->info));
+    }
+}
+
+void Dialog::on_cboDuplex_currentIndexChanged(int index)
+{
+    this->m_duplexDeviceIndex = index;
+    if (index >= 0){
+        this->Log("Duplex device index changed to: " + QString::number(index));
+        auto api = m_portaudio.enumerator().findApi(this->m_hostApiIndex);
+        auto dev = m_portaudio.enumerator().findDevice(this->m_hostApiIndex, index, portaudio::DeviceType::types::duplex);
+        Log("Duplex device has api: " + QString(api->info->name));
+        Log("Duplex device name: " + QString(dev->info->name));
+        Log("Duplex device: " + channels_to_string(dev->info));
     }
 
 }
 
-void Dialog::on_btnTest_clicked()
-{
 
-}
 
-void Dialog::on_btnTest_toggled(bool checked)
+void Dialog::on_btnTest_toggled(bool)
 {
+    /*/
     if (m_device.global_device_index == portaudio::INVALID_PA_DEVICE_INDEX)
     {
         QMessageBox::critical(this, "No Selected device",
@@ -155,13 +193,18 @@ void Dialog::on_btnTest_toggled(bool checked)
                 this->ui->cboHostApi->setEnabled(true);
                 this->ui->btnTest->setText("Test");
 
+
                 Log("Playing tone to device: " + QString(m_device.info->name) +
                     " Complete.");
+                this->ui->btnTest->setEnabled(true);
+                this->ui->btnTest->setChecked(false);
             }
             catch (const portaudio::Exception &e)
             {
                 Log("Error! Opening device " + QString(m_device.info->name) +
                     " failed" + QString(e.what()));
+                this->ui->btnTest->setEnabled(true);
+                 this->ui->btnTest->setChecked(false);
             }
         }
         else
@@ -169,4 +212,25 @@ void Dialog::on_btnTest_toggled(bool checked)
             // unchecked
         }
     }
+    /*/
+}
+
+
+
+void Dialog::on_btnTestInput_toggled(bool checked)
+{
+
+}
+
+void Dialog::on_btnTestOutput_toggled(bool checked)
+{
+
+}
+
+
+
+
+void Dialog::on_btnTestDuplex_toggled(bool checked)
+{
+
 }

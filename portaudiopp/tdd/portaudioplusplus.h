@@ -16,7 +16,6 @@
 #include <stdexcept>
 #include <string>
 #include <string_view>
-#include <unordered_map>
 #include <vector>
 namespace portaudio
 {
@@ -209,31 +208,6 @@ struct StreamSetupInfo
     PaTime inputLatency = {0};
     PaTime outputLatency = {0};
 };
-
-static inline int constexpr INVALID_PA_DEVICE_INDEX = -1;
-struct PaHostApiInfoEx
-{
-    const PaHostApiInfo *info = nullptr;
-    int api_index = -1;
-    int defaultDeviceApiIndex = INVALID_PA_DEVICE_INDEX;
-
-};
-
-struct PaDeviceInfoEx
-{
-    const PaDeviceInfo *info = nullptr;
-    int global_device_index = INVALID_PA_DEVICE_INDEX;
-    StreamSetupInfo streamSetupInfo = {0};
-    const PaHostApiInfoEx* hostApiInfo = { nullptr};
-    int api_device_index = INVALID_PA_DEVICE_INDEX;
-};
-
-
-
-using hostApiList = std::vector<PaHostApiInfoEx>;
-using deviceList = std::vector<PaDeviceInfoEx>;
-
-using apiDeviceList = std::unordered_map<std::string, deviceList>;
 struct CallbackInfo
 {
     CallbackInfo(PaTime elapsed_seconds, const void *input, void *output,
@@ -274,6 +248,121 @@ struct AudioCallback
     virtual ~AudioCallback() noexcept {};
 };
 
+struct CallbackUserData : protected AudioCallback
+{
+    void *UserData = nullptr;
+    CallbackResult callback(CallbackInfo cbInfo) noexcept
+    {
+        return AudioCallback::onCallback(cbInfo);
+    }
+};
+
+
+struct DeviceType{
+
+    static inline DeviceType DeviceTypeFromInfo(const PaDeviceInfo* info){
+        DeviceType ret;
+        if (info->maxInputChannels > 0){
+            ret.m_value |= (unsigned int)DeviceType::types::input;
+        }
+        if (info->maxOutputChannels > 0){
+            ret.m_value |= (unsigned int)DeviceType::types::output;
+        }
+        if (ret.m_value == (unsigned int)types::duplex){
+            assert(info->maxInputChannels > 0 && info->maxOutputChannels > 0);
+        }
+        return ret;
+    }
+    enum class types : unsigned int {
+        none = 0,
+        input = 1,
+        output = 2,
+        duplex = input | output
+    };
+    DeviceType(){
+        m_value = (unsigned int) types::none;
+    }
+    DeviceType(types t){
+        m_value = (unsigned int)t;
+    }
+    types value() const noexcept{
+        return (types)m_value;
+    }
+
+    bool is_input_only() const noexcept{ return value() == types::input;}
+    bool is_output_only() const noexcept{ return value() == types::output;}
+    bool is_duplex() const noexcept{ return value() == types::duplex;}
+    bool is_valid() const noexcept{ return value() == types::none;}
+
+private:
+   unsigned int m_value = (unsigned int)types::none;
+};
+
+static inline int constexpr INVALID_PA_DEVICE_INDEX = -1;
+struct PaHostApiInfoEx;
+
+struct PaDeviceInfoEx
+{
+    const PaDeviceInfo *info = nullptr;
+    int global_device_index = INVALID_PA_DEVICE_INDEX;
+    StreamSetupInfo streamSetupInfo = {0};
+    const PaHostApiInfoEx* hostApiInfo = { nullptr};
+    int api_device_index = INVALID_PA_DEVICE_INDEX;
+    int input_api_device_index = INVALID_PA_DEVICE_INDEX;
+    int output_api_device_index = INVALID_PA_DEVICE_INDEX;
+    int duplex_api_device_index = INVALID_PA_DEVICE_INDEX;
+    DeviceType deviceType;
+};
+
+using deviceList = std::vector<PaDeviceInfoEx>;
+using inputDeviceList = deviceList;
+using outputDeviceList = deviceList;
+using apiDeviceList = deviceList;
+
+struct enumerator_t;
+struct PaHostApiInfoEx
+{
+    friend struct enumerator_t;
+    const PaHostApiInfo *info = nullptr;
+    int api_index = -1;
+    int defaultInputDeviceGlobalApiIndex = INVALID_PA_DEVICE_INDEX;
+    int defaultOutputDeviceGlobalApiIndex = INVALID_PA_DEVICE_INDEX;
+    const deviceList& inputDevices() const noexcept{
+        return m_inputDevices;
+    }
+    const deviceList& outputDevices() const noexcept{
+        return m_outputDevices;
+    }
+    const deviceList& allDevices() const noexcept{
+        return m_allDevices;
+    }
+    const deviceList& duplexDevices() const noexcept{
+        return m_duplexDevices;
+    }
+    const PaDeviceInfoEx* defaultInputDevice() const noexcept{
+        return &m_DefaultInputDevice;
+    }
+    const PaDeviceInfoEx* defaultOutputDevice() const noexcept{
+        return &m_DefaultOutputDevice;
+    }
+    const PaDeviceInfoEx* defaultDuplexDevice() const noexcept{
+        if (m_duplexDevices.empty()) return nullptr;
+        return &m_duplexDevices.at(0);
+    }
+    PaHostApiInfoEx(const PaHostApiInfo* info, int api_index): info(info), api_index(api_index) {
+        defaultInputDeviceGlobalApiIndex = info->defaultInputDevice;
+        defaultOutputDeviceGlobalApiIndex = info->defaultOutputDevice;
+    }
+private:
+    deviceList m_inputDevices;
+    deviceList m_outputDevices;
+    deviceList m_allDevices;
+    deviceList m_duplexDevices;
+    PaDeviceInfoEx m_DefaultInputDevice;
+    PaDeviceInfoEx m_DefaultOutputDevice;
+};
+
+using hostApiList = std::vector<PaHostApiInfoEx>;
 namespace detail
 {
 
@@ -292,35 +381,28 @@ static inline hostApiList enum_apis()
     for (int i = 0; i < cnt; ++i)
     {
         auto inf = Pa_GetHostApiInfo(i);
-        PaHostApiInfoEx d{inf, i};
+        PaHostApiInfoEx d(inf,i);
         list.push_back(d);
     }
     return list;
 }
+
+
 static inline deviceList enum_devices()
 {
     deviceList list;
     for (int i = 0; i < Pa_GetDeviceCount(); ++i)
     {
         auto inf = Pa_GetDeviceInfo(i);
-        PaDeviceInfoEx d{inf, i, {0}};
+        DeviceType dtype = DeviceType::DeviceTypeFromInfo(inf);
+        PaDeviceInfoEx d{inf, i, {0}, 0, inf->hostApi, -1,-1,-1, dtype};
         list.push_back(d);
     }
     return list;
 }
 
-struct CallbackUserData : protected AudioCallback
-{
-    void *UserData = nullptr;
-    CallbackResult callback(CallbackInfo cbInfo) noexcept
-    {
-        return AudioCallback::onCallback(cbInfo);
-    }
-};
-
-
-
 } // namespace detail
+
 
 struct enumerator_t : detail::no_copy<enumerator_t>
 {
@@ -355,35 +437,62 @@ struct enumerator_t : detail::no_copy<enumerator_t>
         this->devices(force_refresh);
         apiDeviceList retval;
 
-        for (auto& api : m_apis)
-        {
-            const auto ptrinfo = Pa_GetDeviceInfo(api.info->defaultOutputDevice);
-            const std::string default_device_name_for_api = ptrinfo->name;
-
-            auto it = retval.find(api.info->name);
-            if (it == retval.end())
-            {
-                auto pr =
-                    retval.insert({std::string(api.info->name), deviceList{}});
-                it = pr.first;
-            }
+        for (auto& api : m_apis){
+            auto& api_indevs = api.m_inputDevices;
+            auto& api_outdevs = api.m_outputDevices;
+            auto& api_alldevs = api.m_allDevices;
+            auto& api_duplexdevs = api.m_duplexDevices;
+            api_indevs.clear();
+            api_outdevs.clear();
+            api_alldevs.clear();
+            api_duplexdevs.clear();
 
             for (int i = 0; i < api.info->deviceCount; ++i){
-                const auto global_index = Pa_HostApiDeviceIndexToDeviceIndex(api.api_index, i);
-                auto& dev = m_devices.at(global_index);
-                std::string name(dev.info->name);
-                if (name == default_device_name_for_api){
-                    api.defaultDeviceApiIndex = i;
-                }
-                dev.hostApiInfo = &api;
+
+                const auto global_device_index = Pa_HostApiDeviceIndexToDeviceIndex(api.api_index, i);
+                auto&  dev_ref = m_devices.at(global_device_index); // NOT a copy
+                auto dev = m_devices.at(global_device_index); // it *is* a copy.
+                assert(dev.global_device_index == global_device_index);
                 dev.api_device_index = i;
-                it->second.push_back(dev);
-            }
+
+                api_alldevs.push_back(dev);
+                if (dev.deviceType.is_input_only()){
+                    dev.input_api_device_index = api_indevs.size();
+                    dev_ref.input_api_device_index = dev.input_api_device_index;
+                    api_indevs.push_back(dev);
+                }
+                else if (dev.deviceType.is_output_only()){
+                    dev.output_api_device_index = api_outdevs.size();
+                    dev_ref.output_api_device_index = dev.output_api_device_index;
+                    api_outdevs.push_back(dev);
+                }
+                else if (dev.deviceType.is_duplex()){
+                    dev.input_api_device_index = api_indevs.size();
+                    dev.output_api_device_index = api_outdevs.size();
+                    dev.duplex_api_device_index = api_duplexdevs.size();
+                    dev_ref.output_api_device_index = dev.output_api_device_index;
+                    dev_ref.input_api_device_index = dev.input_api_device_index;
+                    dev_ref.duplex_api_device_index = dev.duplex_api_device_index;
+                    api_indevs.push_back(dev);
+                    api_outdevs.push_back(dev);
+                    api_duplexdevs.push_back(dev);
+                }
+                auto definput = findDevice(this->m_devices, api.defaultInputDeviceGlobalApiIndex);
+                auto defoutput =  findDevice(m_devices, api.defaultOutputDeviceGlobalApiIndex);
+                assert(definput && defoutput);
+                api.m_DefaultInputDevice = *definput;
+                api.m_DefaultOutputDevice = *defoutput;
+
+            };
+
         };
 
+
         for (const auto& a : m_apis){
-            assert(a.defaultDeviceApiIndex >= 0);
-            assert (a.defaultDeviceApiIndex <= a.info->deviceCount);
+            assert(a.defaultInputDevice()->api_device_index != INVALID_PA_DEVICE_INDEX);
+            assert (a.defaultOutputDevice()->api_device_index != INVALID_PA_DEVICE_INDEX);
+            assert(a.defaultInputDevice()->global_device_index != INVALID_PA_DEVICE_INDEX);
+            assert (a.defaultOutputDevice()->global_device_index!= INVALID_PA_DEVICE_INDEX);
         }
         return retval;
     }
@@ -415,10 +524,88 @@ struct enumerator_t : detail::no_copy<enumerator_t>
         return m_apis.at(def_index);
     }
 
+    const PaHostApiInfoEx* findApi(const std::string_view api_name) const noexcept {
+        for(const auto& api : m_apis)
+        {
+            std::string_view name{api.info->name};
+            if(api_name == name){
+                return &api;
+            }
+        }
+        return nullptr;
+    }
+
+    const PaHostApiInfoEx* findApi(unsigned int api_index) const noexcept{
+        assert(api_index < m_apis.size());
+        if (api_index >= m_apis.size()) return nullptr;
+        return &m_apis.at(api_index);
+    }
+
+    const PaDeviceInfoEx* findDevice(const deviceList& list, unsigned int deviceIndex) const noexcept{
+        assert(deviceIndex < list.size());
+        if (deviceIndex < list.size())
+            return &list.at(deviceIndex);
+        return nullptr;
+    }
+
+    const PaDeviceInfoEx* findDeviceByGlobalIndex(unsigned int globalDeviceIndex) const noexcept{
+        return findDevice(m_devices, globalDeviceIndex);
+    }
+
+    const PaDeviceInfoEx* findDevice(const int apiIndex , unsigned int deviceIndex , const DeviceType::types type = DeviceType::types::output) const noexcept{
+       auto api = findApi(apiIndex);
+       assert(api);
+       if (!api) return nullptr;
+       if (type == DeviceType::types::output){
+           if (deviceIndex >= api->outputDevices().size()){
+               assert("Are you sending me the correct index? For an output device, for example, send the OUTPUT DEVICE api index"
+                        " (not the global device index -- just the OUTPUT device index." == nullptr);
+            return nullptr;
+           }
+           return &api->outputDevices().at(deviceIndex);
+       }else if(type == DeviceType::types::input){
+           if (deviceIndex >= api->outputDevices().size()){
+               assert("Are you sending me the correct index? For an input device, for example, send the INPUT DEVICE api index"
+                        " (not the global device index -- just the INPUT device index." == nullptr);
+            return nullptr;
+           }
+           return &api->inputDevices().at(deviceIndex);
+       }else{
+           assert(type == DeviceType::types::duplex
+                  && "findDevice: You should either want an input device, an output device, or a duplex device. Which is it?" != nullptr);
+        return &api->duplexDevices().at(deviceIndex);
+       }
+
+    }
+
+
+    const PaDeviceInfoEx* findDevice(const PaHostApiInfoEx& , unsigned int , const DeviceType::types = DeviceType::types::output) const noexcept{
+       assert(0);
+        return nullptr;
+
+
+    }
+
+    const PaDeviceInfoEx* findDevice(const deviceList& devices, std::string_view& deviceName) const noexcept{
+        for (const auto& d: devices){
+            std::string_view name{d.info->name};
+            if (name == deviceName) return &d;
+        }
+        return nullptr;
+    }
+
+    const PaDeviceInfoEx* findDevice(const PaHostApiInfoEx&, std::string_view ) const noexcept{
+        return nullptr;
+    }
+
+
+
 
   private:
     mutable hostApiList m_apis;
     mutable deviceList m_devices;
+    mutable deviceList m_input_devices;
+    mutable deviceList m_output_devices;
     mutable apiDeviceList m_apiDeviceList;
     deviceList &devices_non_const() noexcept { return m_devices; }
 };

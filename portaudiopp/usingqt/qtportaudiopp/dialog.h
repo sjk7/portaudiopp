@@ -3,6 +3,7 @@
 
 #include <QDialog>
 #include "portaudioplusplus.h"
+class QComboBox;
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class Dialog; }
@@ -17,15 +18,18 @@ public:
     ~Dialog();
 
 private slots:
-    void on_cboHostApi_currentIndexChanged(const QString &arg1);
-
-    void on_cboDevice_currentIndexChanged(int index);
-
-    void on_btnTest_clicked();
-
     void on_btnTest_toggled(bool checked);
+    void on_cboOutput_currentIndexChanged(int index);
+    void on_cboHostApi_currentIndexChanged(int index);
+    void on_btnTestInput_toggled(bool checked);
+    void on_btnTestOutput_toggled(bool checked);
+    void on_cboInput_currentIndexChanged(int index);
 
-  private:
+    void on_cboDuplex_currentIndexChanged(int index);
+
+    void on_btnTestDuplex_toggled(bool checked);
+
+private:
     Ui::Dialog *ui;
     portaudio::Portaudio m_portaudio;
     void showEvent( QShowEvent* event ) {
@@ -34,10 +38,15 @@ private slots:
     }
     void Pasetup();
     void Log(const QString& s);
-    void popDevices(int apiIndex, const QString& selApi);
-    QString m_hostSelText;
+    void popDevices(int apiIndex);
+    void popDevices(const portaudio::deviceList& devices, QComboBox* cbo);
+    int m_hostApiIndex = -1;
+    int m_inputDeviceIndex = -1;
+    int m_outputDeviceIndex = -1;
+    int m_duplexDeviceIndex = -1;
     portaudio::PaDeviceInfoEx m_device;
     bool m_bpopping =false;
+    void selectDefaultDevice(const portaudio::PaHostApiInfoEx* api, QComboBox* cbo);
 
 };
 #endif // DIALOG_H
