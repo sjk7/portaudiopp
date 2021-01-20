@@ -46,7 +46,10 @@ private:
     int m_duplexDeviceIndex = -1;
     portaudio::PaDeviceInfoEx m_device;
     bool m_bpopping =false;
-    void selectDefaultDevice(const portaudio::PaHostApiInfoEx* api, QComboBox* cbo);
+    void selectDefaultDevice(const portaudio::PaHostApiInfoEx *api,
+                             QComboBox *cbo);
+    std::atomic<int> m_WantQuit = 0;
 
+    void reject();
 };
 #endif // DIALOG_H

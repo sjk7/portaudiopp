@@ -132,7 +132,15 @@ template <typename T> class fader
 };
 } // namespace dsp
 
-static inline void sleep_ms(const long ms) noexcept { Pa_Sleep(ms); }
+[[maybe_unused]] static inline void sleep_ms(const long ms) noexcept
+{
+    Pa_Sleep(ms);
+}
+[[maybe_unused]] static inline void SleepmS(const long ms) noexcept
+{
+    Pa_Sleep(ms);
+}
+
 class Exception : public std::runtime_error
 {
     std::ostringstream m_stream;
@@ -306,7 +314,7 @@ struct PaDeviceInfoEx
     const PaDeviceInfo *info = nullptr;
     int global_device_index = INVALID_PA_DEVICE_INDEX;
     StreamSetupInfo streamSetupInfo = {0};
-    const PaHostApiInfoEx* hostApiInfo = { nullptr};
+    const PaHostApiInfo *hostApiInfo = {nullptr};
     int api_device_index = INVALID_PA_DEVICE_INDEX;
     int input_api_device_index = INVALID_PA_DEVICE_INDEX;
     int output_api_device_index = INVALID_PA_DEVICE_INDEX;
@@ -395,14 +403,17 @@ static inline deviceList enum_devices()
     {
         auto inf = Pa_GetDeviceInfo(i);
         DeviceType dtype = DeviceType::DeviceTypeFromInfo(inf);
-        PaDeviceInfoEx d{inf, i, {0}, 0, inf->hostApi, -1,-1,-1, dtype};
+        auto api_inf = Pa_GetHostApiInfo(inf->hostApi);
+        PaDeviceInfoEx d{inf, i, {0}, api_inf, inf->hostApi, -1, -1, -1, dtype};
+        assert(d.hostApiInfo != nullptr);
         list.push_back(d);
+        const auto &dback = list.at(list.size() - 1);
+        assert(d.hostApiInfo != nullptr);
     }
     return list;
 }
 
 } // namespace detail
-
 
 struct enumerator_t : detail::no_copy<enumerator_t>
 {
@@ -451,7 +462,9 @@ struct enumerator_t : detail::no_copy<enumerator_t>
 
                 const auto global_device_index = Pa_HostApiDeviceIndexToDeviceIndex(api.api_index, i);
                 auto&  dev_ref = m_devices.at(global_device_index); // NOT a copy
+                assert(dev_ref.hostApiInfo != nullptr);
                 auto dev = m_devices.at(global_device_index); // it *is* a copy.
+                assert(dev_ref.hostApiInfo != nullptr);
                 assert(dev.global_device_index == global_device_index);
                 dev.api_device_index = i;
 
@@ -624,7 +637,40 @@ makeStreamSetupInfo(int samplerate = 44100,
     return s;
 }
 
-
+[[maybe_unused]] static inline StreamSetupInfo
+makeStreamSetupInfo(const PaDeviceInfoEx &devInfo, PaStreamParameters *inParams,
+                    PaStreamParameters *outParams,
+                    PaSampleFormat fmt = SampleFormat::Float32,
+                    int samplerate = -1)
+{
+    StreamSetupInfo s;
+    if (samplerate == -1)
+        s.samplerate = devInfo.info->defaultSampleRate;
+    else
+        s.samplerate = samplerate;
+    s.sampleFormat = fmt;
+    s.inParams = inParams;
+    s.outParams = outParams;
+    s.outputLatency = devInfo.info->defaultLowOutputLatency;
+    s.inputLatency = devInfo.info->defaultLowInputLatency;
+    if (inParams)
+    {
+        s.inputChannelCount = inParams->channelCount;
+    }
+    else
+    {
+        s.inputChannelCount = 0;
+    }
+    if (outParams)
+    {
+        s.outputChannelCount = outParams->channelCount;
+    }
+    else
+    {
+        s.outputChannelCount = 0;
+    }
+    return s;
+}
 
 namespace detail
 {
@@ -679,13 +725,25 @@ class TimeStampGen
     std::atomic<uint64_t> m_nframes = {0};
 }; // TimeStampGen
 
+struct StreamBase
+{
+    static inline unsigned int StreamsActive() { return m_StreamsActive; }
+    StreamBase() { m_StreamsActive++; }
+    virtual ~StreamBase() { m_StreamsActive--; }
+
+  protected:
+    static inline std::atomic<unsigned int> m_StreamsActive;
+};
+
 } // namespace detail
 
-template <typename AUDIOCALLBACK> class Stream : public detail::TimeStampGen
+template <typename AUDIOCALLBACK>
+class Stream : public detail::TimeStampGen, public detail::StreamBase
 {
   private:
     StreamSetupInfo m_info;
     std::atomic<int> m_runstate{0};
+    void setRunState(int newState) { m_runstate = newState; }
 
     static inline int
     callback_dispatcher(const void *input, void *output,
@@ -705,6 +763,13 @@ template <typename AUDIOCALLBACK> class Stream : public detail::TimeStampGen
             p->m_fader.processSamples(frameCount, (float *)output,
                                       p->m_info.outputChannelCount);
         }
+        if (ret != CallbackResult::Continue)
+        {
+            p->setRunState(
+                0); // we don't call StopStream() here due to possible deadlock,
+            // but we set the runstate so anyone waiting on isRunning() knows we
+            // have stopped.
+        }
         return (int)ret;
     }
     dsp::fader<float> m_fader;
@@ -717,6 +782,8 @@ template <typename AUDIOCALLBACK> class Stream : public detail::TimeStampGen
     Stream(AUDIOCALLBACK &&cb, std::string_view id = "") : m_cb(cb), m_sid(id)
     {
     }
+
+    virtual ~Stream() { Close(); }
     Stream(const Stream &rhs) = delete;
     Stream &operator=(const Stream &rhs) = delete;
 
@@ -757,6 +824,7 @@ template <typename AUDIOCALLBACK> class Stream : public detail::TimeStampGen
         ret.inputLatency = painfo->inputLatency;
         ret.outputLatency = painfo->outputLatency;
         ret.samplerate = painfo->sampleRate;
+
         return ret;
     }
 
@@ -793,6 +861,7 @@ template <typename AUDIOCALLBACK> class Stream : public detail::TimeStampGen
         }
         m_info = info;
         m_info = actualStreamInfo();
+        info = m_info; // so caller knows what he actually got.
 
         TimeStampGen::reset(info.samplerate);
     }
@@ -817,6 +886,7 @@ template <typename AUDIOCALLBACK> class Stream : public detail::TimeStampGen
         }
         m_info = info;
         m_info = actualStreamInfo();
+        info = m_info; // so caller knows what he actually got
 
         TimeStampGen::reset(info.samplerate);
     }
@@ -897,8 +967,6 @@ template <typename AUDIOCALLBACK> class Stream : public detail::TimeStampGen
         }
     }
 
-    ~Stream() { Close(); }
-
     std::string_view id() const noexcept { return m_sid; }
 
   private:
@@ -910,6 +978,10 @@ template <typename AUDIOCALLBACK> class Stream : public detail::TimeStampGen
 class Portaudio
 {
   public:
+    static inline int StreamsActive()
+    {
+        return detail::StreamBase::StreamsActive();
+    }
     Portaudio(const std::string_view id = "")
         : info(*Pa_GetVersionInfo()), m_id(id)
     {
@@ -999,6 +1071,31 @@ streamParamsDefault(const Portaudio &pa, PaDeviceInfoEx *device = nullptr)
         params.device = device->global_device_index;
 
     params.sampleFormat = SampleFormat::Float32;
+    if (device)
+    {
+        if (device->deviceType.is_input_only())
+        {
+            params.suggestedLatency = device->info->defaultLowInputLatency;
+            params.channelCount = (std::min)(device->info->maxInputChannels, 2);
+        }
+        else if (device->deviceType.is_output_only())
+        {
+            params.suggestedLatency = device->info->defaultLowOutputLatency;
+            params.channelCount =
+                (std::min)(device->info->maxOutputChannels, 2);
+        }
+        else
+        {
+            params.suggestedLatency =
+                (std::max)(device->info->defaultLowInputLatency,
+                           device->info->defaultLowOutputLatency);
+            params.channelCount = (std::min)(device->info->maxOutputChannels,
+                                             device->info->maxInputChannels);
+            if (params.channelCount > 2) params.channelCount = 2;
+        }
+    }
+
+    params.hostApiSpecificStreamInfo = nullptr;
     return params;
 }
 

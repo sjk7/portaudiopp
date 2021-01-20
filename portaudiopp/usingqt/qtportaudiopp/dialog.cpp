@@ -2,15 +2,35 @@
 #include "ui_dialog.h"
 #include <QDateTime>
 #include <QMessageBox>
+#include <QStandardPaths>
 
+#include <fstream>
+
+void Dialog::reject()
+{
+    m_WantQuit = m_portaudio.StreamsActive();
+
+    ui->btnTestInput->setChecked(false);
+    ui->btnTestDuplex->setChecked(false);
+    ui->btnTestOutput->setChecked(false);
+    if (m_WantQuit == 0)
+    {
+        QDialog::reject();
+    }
+}
+
+static inline QString FormatSeconds(float seconds)
+{
+    return QDateTime::fromMSecsSinceEpoch(seconds * 1000)
+        .toUTC()
+        .toString("hh:mm:ss:zzz");
+}
 
 Dialog::Dialog(QWidget *parent)
-    : QDialog(parent)
-    , ui(new Ui::Dialog), m_portaudio("QtTest")
+    : QDialog(parent), ui(new Ui::Dialog), m_portaudio("QtTest")
 {
     ui->setupUi(this);
     this->setWindowTitle("Portaudio Devices Tester");
-
 }
 
 Dialog::~Dialog()
@@ -219,7 +239,107 @@ void Dialog::on_btnTest_toggled(bool)
 
 void Dialog::on_btnTestInput_toggled(bool checked)
 {
+    if (checked)
+    {
+        auto api = m_portaudio.enumerator().findApi(this->m_hostApiIndex);
+        assert(api);
+        auto dev = m_portaudio.enumerator().findDevice(
+            api->inputDevices(), this->m_inputDeviceIndex);
+        assert(dev);
+        assert(dev->deviceType.is_input_only() || dev->deviceType.is_duplex());
+        portaudio::PaDeviceInfoEx mydevinstance(*dev);
 
+        auto streamParams =
+            portaudio::streamParamsDefault(m_portaudio, &mydevinstance);
+
+        auto mysetupInfo = portaudio::makeStreamSetupInfo(
+            mydevinstance, &streamParams, nullptr);
+
+        auto filepath =
+            QStandardPaths::writableLocation(QStandardPaths::DesktopLocation) +
+            "/my_recorded.raw";
+        std::fstream f(filepath.toStdString().c_str(),
+                       std::ios_base::binary | std::ios_base::out);
+
+        if (!f)
+        {
+            Log("Error opening recording file: " + filepath);
+            ui->btnTestInput->setChecked(false);
+            return;
+        }
+
+        Log("Preparing to record to file from input device: " +
+            QString(dev->info->name) + ", using api " +
+            QString(dev->hostApiInfo->name));
+
+        try
+        {
+            auto rec_stream = m_portaudio.openStream(
+                mysetupInfo, [&](portaudio::CallbackInfo info) {
+                    float *finput = (float *)info.input;
+                    size_t cb = sizeof(float) * mysetupInfo.inputChannelCount *
+                                info.frameCount;
+                    f.write((char *)finput, cb);
+                    assert(f);
+
+                    if (!ui->btnTestInput->isChecked() || m_WantQuit)
+                    {
+                        return portaudio::CallbackResult::Complete;
+                    }
+
+                    return portaudio::CallbackResult::Continue;
+                });
+
+            try
+            {
+                rec_stream.Start();
+                Log("Recording to file: " + filepath + ": Started.");
+                unsigned int i = 0;
+                while (rec_stream.isRunning())
+                {
+                    portaudio::SleepmS(10);
+                    if (i == 0)
+                    {
+                        Log("Started input capture to file: " + filepath +
+                            " ... ");
+                    }
+                    if (i % 10 == 0)
+                    {
+                        ui->btnTestInput->setText(
+                            "Recording: " +
+                            FormatSeconds(rec_stream.elapsedSeconds()));
+
+                        QCoreApplication::processEvents(); // lovely! :-(
+                    }
+                    i += 10;
+                };
+
+                f.close();
+
+                ui->btnTestInput->setText("Record Input To &File");
+                Log("Recording to file: " + filepath + ": Complete.");
+            }
+            catch (const portaudio::Exception &e)
+            {
+                Log("Failed to start record stream for device: " +
+                    QString(mydevinstance.info->name) + " " +
+                    QString(e.what()));
+                ui->btnTestInput->setChecked(false);
+            }
+        }
+        catch (portaudio::Exception &e)
+        {
+            Log("Failed to set up record stream for device: " +
+                QString(mydevinstance.info->name) + " " + QString(e.what()));
+            ui->btnTestInput->setChecked(false);
+        }
+
+        if (m_WantQuit)
+        {
+            reject();
+            return;
+        }
+    }
 }
 
 void Dialog::on_btnTestOutput_toggled(bool checked)

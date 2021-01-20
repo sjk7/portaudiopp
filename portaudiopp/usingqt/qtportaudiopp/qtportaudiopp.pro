@@ -27,7 +27,7 @@ FORMS += \
 macx {
     LIBS += ../../../portaudio/build/libportaudio.dylib
 }
-unix{
+unix : !macx {
 LIBS += -lportaudio
 }
 win32{
