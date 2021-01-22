@@ -4,7 +4,7 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 CONFIG += c++17
 CONFIG += sdk_no_version_check
-QMAKE_CXXFLAGS += -Wall -Wpedantic -Wextra
+QMAKE_CXXFLAGS += -std=c++1z -Wall -Wpedantic -Wextra
 
 # You can make your code fail to compile if it uses deprecated APIs.
 # In order to do so, uncomment the following line.
@@ -14,8 +14,8 @@ INCLUDEPATH += "../../tdd/"
 INCLUDEPATH += "../../../portaudio/include"
 
 SOURCES += \
-    main.cpp \
-    dialog.cpp
+    dialog.cpp \
+    main.cpp
 
 HEADERS += \
     ../../../portaudio/include/portaudio.h \

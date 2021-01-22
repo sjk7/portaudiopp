@@ -19,7 +19,7 @@ void Dialog::reject()
     }
 }
 
-static inline QString FormatSeconds(float seconds)
+static auto inline FormatSeconds(float seconds) -> QString
 {
     return QDateTime::fromMSecsSinceEpoch(seconds * 1000)
         .toUTC()
@@ -33,11 +33,22 @@ Dialog::Dialog(QWidget *parent)
     this->setWindowTitle("Portaudio Devices Tester");
 }
 
-Dialog::~Dialog()
-{
-    delete ui;
-}
+Dialog::~Dialog() { delete ui; }
 
+void Dialog::showError(bool err)
+{
+    auto item = ui->listWidget->item(ui->listWidget->count() - 1);
+    item->setSelected(true);
+    if (err)
+    {
+        item->setBackground(Qt::red);
+        // add this line so it stands out: If it's
+        // the last one, the selected one, it won't look red!
+        Log("Review: one or more errors encountered.");
+    }
+
+    ui->listWidget->scrollToBottom();
+}
 void Dialog::Pasetup()
 {
     ui->cboHostApi->clear();
@@ -54,25 +65,25 @@ void Dialog::Pasetup()
     ui->cboHostApi->setCurrentIndex(def_api->api_index);
 }
 
-
 void Dialog::on_cboHostApi_currentIndexChanged(int index)
 {
     m_hostApiIndex = index;
     popDevices(index);
-
 }
 
-void Dialog::popDevices(const portaudio::deviceList& devices, QComboBox* cbo){
+void Dialog::popDevices(const portaudio::deviceList &devices, QComboBox *cbo)
+{
     cbo->clear();
     m_bpopping = true;
-    for (const auto& d : devices){
+    for (const auto &d : devices)
+    {
         cbo->addItem(d.info->name);
     }
 
     m_bpopping = false;
 }
 
-void Dialog::Log(const QString& s)
+void Dialog::Log(const QString &s)
 {
     QDateTime dt = QDateTime::currentDateTime();
     QString out = dt.time().toString() + " " + s;
@@ -81,22 +92,24 @@ void Dialog::Log(const QString& s)
     ui->listWidget->repaint();
 }
 
-void Dialog::selectDefaultDevice(const portaudio::PaHostApiInfoEx* api, QComboBox* cbo){
+void Dialog::selectDefaultDevice(const portaudio::PaHostApiInfoEx *api,
+                                 QComboBox *cbo)
+{
 
     m_bpopping = true;
     auto idx = 0;
-    if (cbo == ui->cboInput){
+    const auto dup = api->defaultDuplexDevice();
+    const int dup_index = dup ? dup->duplex_api_device_index : -1;
+
+    if (cbo == ui->cboInput)
         idx = api->defaultInputDevice()->input_api_device_index;
-    }else if(cbo == ui->cboInput){
+    else if (cbo == ui->cboOutput)
         idx = api->defaultOutputDevice()->output_api_device_index;
-    }else if (cbo == ui->cboDuplex){
-        auto dup = api->defaultDuplexDevice();
-        if (dup){
-            idx = dup->duplex_api_device_index;
-        }else{
-            idx = -1;
-        }
-    }
+    else if (cbo == ui->cboDuplex)
+        idx = dup_index;
+    else
+        assert("cant find combobox!" == nullptr);
+
     cbo->setCurrentIndex(idx);
     m_bpopping = false;
 }
@@ -107,8 +120,8 @@ void Dialog::popDevices(int apiIndex)
     ui->cboInput->clear();
     ui->cboOutput->clear();
     ui->cboDuplex->clear();
-    const auto& enummer = m_portaudio.enumerator();
-    const auto* api = enummer.findApi(apiIndex);
+    const auto &enummer = m_portaudio.enumerator();
+    const auto *api = enummer.findApi(apiIndex);
     Q_ASSERT(api);
     popDevices(api->inputDevices(), ui->cboInput);
     popDevices(api->outputDevices(), ui->cboOutput);
@@ -116,13 +129,12 @@ void Dialog::popDevices(int apiIndex)
     selectDefaultDevice(api, ui->cboInput);
     selectDefaultDevice(api, ui->cboOutput);
     selectDefaultDevice(api, ui->cboDuplex);
-
 }
 
-
-QString channels_to_string( const PaDeviceInfo* info){
-    QString out("maxInputChannels = " +
-        QString::number(info->maxInputChannels) +
+auto channels_to_string(const PaDeviceInfo *info) -> QString
+{
+    QString out(
+        "maxInputChannels = " + QString::number(info->maxInputChannels) +
         ", maxOutputChannels = " + QString::number(info->maxOutputChannels));
     return out;
 }
@@ -130,10 +142,12 @@ QString channels_to_string( const PaDeviceInfo* info){
 void Dialog::on_cboOutput_currentIndexChanged(int index)
 {
     this->m_outputDeviceIndex = index;
-    if (index >= 0){
+    if (index >= 0)
+    {
         this->Log("Output device index changed to: " + QString::number(index));
         auto api = m_portaudio.enumerator().findApi(this->m_hostApiIndex);
-        auto dev = m_portaudio.enumerator().findDevice(this->m_hostApiIndex, index, portaudio::DeviceType::types::output);
+        auto dev = m_portaudio.enumerator().findDevice(
+            this->m_hostApiIndex, index, portaudio::DeviceType::types::output);
         Log("Output device has api: " + QString(api->info.name));
         Log("Output device name: " + QString(dev->info->name));
         Log("Output device: " + channels_to_string(dev->info));
@@ -144,11 +158,13 @@ void Dialog::on_cboOutput_currentIndexChanged(int index)
 void Dialog::on_cboInput_currentIndexChanged(int index)
 {
     this->m_inputDeviceIndex = index;
-    if (index >= 0){
+    if (index >= 0)
+    {
 
         this->Log("Input device index changed to: " + QString::number(index));
         auto api = m_portaudio.enumerator().findApi(this->m_hostApiIndex);
-        auto dev = m_portaudio.enumerator().findDevice(this->m_hostApiIndex, index, portaudio::DeviceType::types::input);
+        auto dev = m_portaudio.enumerator().findDevice(
+            this->m_hostApiIndex, index, portaudio::DeviceType::types::input);
         Log("Input device has api: " + QString(api->info.name));
         Log("Input device name: " + QString(dev->info->name));
         Log("Input device: " + channels_to_string(dev->info));
@@ -158,18 +174,17 @@ void Dialog::on_cboInput_currentIndexChanged(int index)
 void Dialog::on_cboDuplex_currentIndexChanged(int index)
 {
     this->m_duplexDeviceIndex = index;
-    if (index >= 0){
+    if (index >= 0)
+    {
         this->Log("Duplex device index changed to: " + QString::number(index));
         auto api = m_portaudio.enumerator().findApi(this->m_hostApiIndex);
-        auto dev = m_portaudio.enumerator().findDevice(this->m_hostApiIndex, index, portaudio::DeviceType::types::duplex);
+        auto dev = m_portaudio.enumerator().findDevice(
+            this->m_hostApiIndex, index, portaudio::DeviceType::types::duplex);
         Log("Duplex device has api: " + QString(api->info.name));
         Log("Duplex device name: " + QString(dev->info->name));
         Log("Duplex device: " + channels_to_string(dev->info));
     }
-
 }
-
-
 
 void Dialog::on_btnTest_toggled(bool)
 {
@@ -236,25 +251,11 @@ void Dialog::on_btnTest_toggled(bool)
     /*/
 }
 
-
-
 void Dialog::on_btnTestInput_toggled(bool checked)
 {
+    bool err = false;
     if (checked)
     {
-        auto api = m_portaudio.enumerator().findApi(this->m_hostApiIndex);
-        assert(api);
-        auto dev = m_portaudio.enumerator().findDevice(
-            api->inputDevices(), this->m_inputDeviceIndex);
-        assert(dev);
-        assert(dev->deviceType.is_input_only() || dev->deviceType.is_duplex());
-        portaudio::PaDeviceInfoEx mydevinstance(*dev);
-
-        auto streamParams =
-            portaudio::makeStreamParams(m_portaudio, &mydevinstance);
-
-        mydevinstance.streamSetupInfo = portaudio::makeStreamSetupInfo(
-            mydevinstance, &streamParams, nullptr);
 
         auto filepath =
             QStandardPaths::writableLocation(QStandardPaths::DesktopLocation) +
@@ -269,72 +270,102 @@ void Dialog::on_btnTestInput_toggled(bool checked)
             return;
         }
 
-        Log("Preparing to record to file from input device: " +
-            QString(dev->info->name) + ", using api " +
-            QString(dev->hostApiInfo->name));
+        auto api = m_portaudio.enumerator().findApi(this->m_hostApiIndex);
+        assert(api);
+        auto dev = m_portaudio.enumerator().findDevice(
+            api->inputDevices(), this->m_inputDeviceIndex);
+        assert(dev);
+        assert(dev->deviceType.is_input_only() || dev->deviceType.is_duplex());
+        portaudio::PaDeviceInfoEx mydevinstance(*dev);
 
         try
         {
-            auto rec_stream = m_portaudio.openStream(
-                mydevinstance, [&](portaudio::CallbackInfo info) {
-                    float *finput = (float *)info.input;
-                    size_t cb =
-                        sizeof(float) *
-                        mydevinstance.streamSetupInfo.inputChannelCount *
-                        info.frameCount;
-                    f.write((char *)finput, cb);
-                    assert(f);
 
-                    if (!ui->btnTestInput->isChecked() || m_WantQuit)
-                    {
-                        return portaudio::CallbackResult::Complete;
-                    }
+            auto streamParams =
+                portaudio::makeStreamParams(m_portaudio, &mydevinstance);
 
-                    return portaudio::CallbackResult::Continue;
-                });
-
+            mydevinstance.streamSetupInfo = portaudio::makeStreamSetupInfo(
+                mydevinstance, &streamParams, nullptr);
+        }
+        catch (const portaudio::Exception &e)
+        {
+            Log("Error whilst setting up input device: " + QString(e.what()));
+            err = true;
+        }
+        if (!err)
+        {
+            Log("Preparing to record to file from input device: " +
+                QString(dev->info->name) + ", using api " +
+                QString(dev->hostApiInfo->name));
             try
             {
-                rec_stream.Start();
-                Log("Recording to file: " + filepath + ": Started.");
-                unsigned int i = 0;
-                while (rec_stream.isRunning())
+                auto rec_stream = m_portaudio.openStream(
+                    mydevinstance, [&](portaudio::CallbackInfo info) {
+                        auto finput = (float *)info.input;
+                        size_t cb =
+                            sizeof(float) *
+                            mydevinstance.streamSetupInfo.inputChannelCount *
+                            info.frameCount;
+                        f.write((char *)finput, cb);
+                        assert(f);
+
+                        if (!ui->btnTestInput->isChecked() || m_WantQuit)
+                        {
+                            return portaudio::CallbackResult::Complete;
+                        }
+
+                        return portaudio::CallbackResult::Continue;
+                    });
+
+                try
                 {
-                    portaudio::SleepmS(10);
-                    if (i == 0)
+                    rec_stream.Start();
+
+                    Log("Recording to file: " + filepath + ": Started.");
+                    Log("Hit the button again to stop it");
+                    ui->listWidget->scrollToBottom();
+                    ui->listWidget->item(ui->listWidget->count() - 1)
+                        ->setSelected(true);
+                    unsigned int i = 0;
+                    while (rec_stream.isRunning())
                     {
-                        Log("Started input capture to file: " + filepath +
-                            " ... ");
-                    }
-                    if (i % 10 == 0)
-                    {
-                        ui->btnTestInput->setText(
-                            "Recording: " +
-                            FormatSeconds(rec_stream.elapsedSeconds()));
+                        portaudio::SleepmS(10);
+                        if (i == 0)
+                        {
+                            Log("Started input capture to file: " + filepath +
+                                " ... ");
+                        }
+                        if (i % 10 == 0)
+                        {
+                            ui->btnTestInput->setText(
+                                "Recording: " +
+                                FormatSeconds(rec_stream.elapsedSeconds()));
 
-                        QCoreApplication::processEvents(); // lovely! :-(
-                    }
-                    i += 10;
-                };
+                            QCoreApplication::processEvents(); // lovely! :-(
+                        }
+                        i += 10;
+                    };
 
-                f.close();
+                    f.close();
 
-                ui->btnTestInput->setText("Record Input To &File");
-                Log("Recording to file: " + filepath + ": Complete.");
+                    ui->btnTestInput->setText("Record Input To &File");
+                    Log("Recording to file: " + filepath + ": Complete.");
+                }
+                catch (const portaudio::Exception &e)
+                {
+                    Log("Failed to start record stream for device: " +
+                        QString(mydevinstance.info->name) + " " +
+                        QString(e.what()));
+                    err = true;
+                }
             }
-            catch (const portaudio::Exception &e)
+            catch (portaudio::Exception &e)
             {
-                Log("Failed to start record stream for device: " +
+                Log("Failed to set up record stream for device: " +
                     QString(mydevinstance.info->name) + " " +
                     QString(e.what()));
-                ui->btnTestInput->setChecked(false);
+                err = true;
             }
-        }
-        catch (portaudio::Exception &e)
-        {
-            Log("Failed to set up record stream for device: " +
-                QString(mydevinstance.info->name) + " " + QString(e.what()));
-            ui->btnTestInput->setChecked(false);
         }
 
         if (m_WantQuit)
@@ -343,20 +374,134 @@ void Dialog::on_btnTestInput_toggled(bool checked)
             return;
         }
     }
+
+    showError(err);
+
+    QApplication::restoreOverrideCursor();
+    ui->btnTestInput->setChecked(false);
+    ui->btnTestInput->setText("Test Input");
+    ui->btnTestInput->setEnabled(true);
+    if (this->m_WantQuit) QDialog::reject();
 }
 
 void Dialog::on_btnTestOutput_toggled(bool checked)
 {
+    bool err = false;
+    if (checked)
+    {
+        if (m_outputDeviceIndex < 0)
+        {
+            QMessageBox::critical(this, "Output Device Error",
+                                  "It appears no output device is selected.");
+        }
+        else
+        {
+            // go go go
+            const auto *pmydevice = m_portaudio.enumerator().findDevice(
+                m_hostApiIndex, m_outputDeviceIndex);
+            assert(pmydevice);
+            if (!pmydevice)
+            {
+                QMessageBox::critical(this, "Unexpected Output Device Error",
+                                      "Cannot find any device.");
+            }
 
+            else
+            {
+                auto mydevice = *pmydevice;
+                mydevice.deviceTypeSet(portaudio::DeviceType::types::output);
+                try
+                {
+                    auto streamParams =
+                        portaudio::makeStreamParams(m_portaudio, &mydevice);
+
+                    auto mysetupInfo = portaudio::makeStreamSetupInfo(
+                        mydevice, nullptr, &streamParams);
+
+                    mydevice.streamSetupInfo = mysetupInfo;
+                }
+                catch (const portaudio::Exception &e)
+                {
+                    Log("Unexpected error when setting up output device:\n" +
+                        QString(mydevice.info->name) + " " + QString(e.what()));
+                    err = true;
+                }
+
+                if (!err)
+                {
+                    unsigned int n = 0;
+
+                    try
+                    {
+                        QApplication::setOverrideCursor(Qt::WaitCursor);
+
+                        QCoreApplication::processEvents();
+                        auto stream = m_portaudio.openStream(
+                            mydevice, [&](portaudio::CallbackInfo info) {
+                                const int nch =
+                                    mydevice.streamSetupInfo.outputChannelCount;
+                                assert(nch == 2);
+
+                                portaudio::dsp::fill_buffer_sine(n, info, nch);
+
+                                return portaudio::CallbackResult::Continue;
+                            });
+
+                        try
+                        {
+                            stream.Start();
+                            Log("Playing test tone to output device. Hit the "
+                                "button again to stop it");
+                            ui->listWidget->scrollToBottom();
+                            ui->listWidget->item(ui->listWidget->count() - 1)
+                                ->setSelected(true);
+                            while (stream.isRunning())
+                            {
+                                ui->btnTestOutput->setText(
+                                    FormatSeconds(stream.elapsedSeconds()));
+                                QCoreApplication::processEvents();
+                                portaudio::SleepmS(10);
+                                if (m_WantQuit ||
+                                    !ui->btnTestOutput->isChecked())
+                                    break;
+                            }
+
+                            stream.Stop();
+                        }
+                        catch (const portaudio::Exception &e)
+                        {
+                            Log("Unexpected error when starting output "
+                                "device:\n" +
+                                QString(mydevice.info->name) + " " +
+                                QString(e.what()));
+                        }
+                    }
+                    catch (const portaudio::Exception &e)
+                    {
+                        Log("Unexpected error when setting up output "
+                            "device:\n" +
+                            QString(mydevice.info->name) + " " +
+                            QString(e.what()));
+                    }
+                }
+            }
+        }
+    }
+
+    showError(err);
+    QApplication::restoreOverrideCursor();
+    ui->btnTestOutput->setChecked(false);
+    ui->btnTestOutput->setText("Test Output");
+    ui->btnTestOutput->setEnabled(true);
+    if (this->m_WantQuit) QDialog::reject();
 }
-
-
-
 
 void Dialog::on_btnTestDuplex_toggled(bool checked)
 {
+    bool err = false;
     if (checked)
     {
+
         if (m_duplexDeviceIndex < 0)
         {
             QMessageBox::critical(this, "Duplex Device Error",
@@ -372,24 +517,67 @@ void Dialog::on_btnTestDuplex_toggled(bool checked)
             "out, for: " +
             QString(device.info->name));
         auto mydevice = device;
-        auto streamParams = portaudio::makeStreamParams(m_portaudio, &mydevice);
-
-        auto mysetupInfo = portaudio::makeStreamSetupInfo(
-            mydevice, &streamParams, &streamParams);
-
-        mydevice.streamSetupInfo = mysetupInfo;
-
         try
         {
-            auto stream =
-                m_portaudio.openStream(mydevice, [&](portaudio::CallbackInfo) {
-                    return portaudio::CallbackResult::Continue;
-                });
+            auto streamParams =
+                portaudio::makeStreamParams(m_portaudio, &mydevice);
+
+            auto mysetupInfo = portaudio::makeStreamSetupInfo(
+                mydevice, &streamParams, &streamParams);
+
+            mydevice.streamSetupInfo = mysetupInfo;
         }
         catch (const portaudio::Exception &e)
         {
-            Log("Unexpected error when setting up duplex device: " +
-                QString(mydevice.info->name) + " " + QString(e.what()));
+            Log("Error setting up device for duplex: " + QString(e.what()));
+            err = true;
+        }
+
+        if (!err)
+        {
+            try
+            {
+                QApplication::setOverrideCursor(Qt::WaitCursor);
+                QCoreApplication::processEvents();
+                auto stream = m_portaudio.openStream(
+                    mydevice, [&](portaudio::CallbackInfo info) {
+                        assert(mydevice.streamSetupInfo.inputChannelCount ==
+                               mydevice.streamSetupInfo.outputChannelCount);
+                        // ^^ They ought to, it's passthrough!
+                        memcpy(info.output, info.input,
+                               sizeof(float) * info.frameCount *
+                                   mydevice.streamSetupInfo.outputChannelCount);
+                        return portaudio::CallbackResult::Continue;
+                    });
+
+                try
+                {
+                    stream.Start();
+                    Log("Loopback device started.");
+                    Log("Hit the button again to stop it");
+                    ui->listWidget->scrollToBottom();
+                    ui->listWidget->item(ui->listWidget->count() - 1)
+                        ->setSelected(true);
+                    while (stream.isRunning())
+                    {
+                        portaudio::SleepmS(10);
+                        if (!ui->btnTestDuplex->isChecked()) break;
+                        ui->btnTestDuplex->setText(
+                            FormatSeconds(stream.elapsedSeconds()));
+                        QCoreApplication::processEvents();
+                    }
+                }
+                catch (const portaudio::Exception &e)
+                {
+                    Log("Unexpected error when starting duplex device:\n" +
+                        QString(mydevice.info->name) + " " + QString(e.what()));
+                }
+            }
+            catch (const portaudio::Exception &e)
+            {
+                Log("Unexpected error when setting up duplex device:\n" +
+                    QString(mydevice.info->name) + " " + QString(e.what()));
+            }
         }
     }
     else
@@ -397,5 +585,14 @@ void Dialog::on_btnTestDuplex_toggled(bool checked)
         Log("Duplex test state toggled off");
     }
 
+    if (this->m_WantQuit)
+    {
+        QDialog::reject();
+        return;
+    }
+    QApplication::restoreOverrideCursor();
+    showError(err);
     ui->btnTestDuplex->setChecked(false);
+    ui->btnTestDuplex->setText("Test Duplex");
+    ui->btnTestDuplex->setEnabled(true);
 }

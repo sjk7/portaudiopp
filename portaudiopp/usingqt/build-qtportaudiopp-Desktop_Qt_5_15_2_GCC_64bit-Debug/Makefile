@@ -16,7 +16,7 @@ CC            = gcc
 CXX           = g++
 DEFINES       = -DQT_QML_DEBUG -DQT_WIDGETS_LIB -DQT_GUI_LIB -DQT_CORE_LIB
 CFLAGS        = -pipe -g -Wall -Wextra -D_REENTRANT -fPIC $(DEFINES)
-CXXFLAGS      = -pipe -g -std=gnu++1z -Wall -Wextra -D_REENTRANT -fPIC $(DEFINES)
+CXXFLAGS      = -pipe -std=c++1z -Wall -Wpedantic -Wextra -g -std=gnu++1z -Wall -Wextra -D_REENTRANT -fPIC $(DEFINES)
 INCPATH       = -I../qtportaudiopp -I. -I../../tdd -I../../../portaudio/include -I/home/steve/Qt/5.15.2/gcc_64/include -I/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets -I/home/steve/Qt/5.15.2/gcc_64/include/QtGui -I/home/steve/Qt/5.15.2/gcc_64/include/QtCore -I. -I/usr/include/libdrm -I. -I/home/steve/Qt/5.15.2/gcc_64/mkspecs/linux-g++
 QMAKE         = /home/steve/Qt/5.15.2/gcc_64/bin/qmake
 DEL_FILE      = rm -f
@@ -52,10 +52,10 @@ OBJECTS_DIR   = ./
 
 ####### Files
 
-SOURCES       = ../qtportaudiopp/main.cpp \
-		../qtportaudiopp/dialog.cpp moc_dialog.cpp
-OBJECTS       = main.o \
-		dialog.o \
+SOURCES       = ../qtportaudiopp/dialog.cpp \
+		../qtportaudiopp/main.cpp moc_dialog.cpp
+OBJECTS       = dialog.o \
+		main.o \
 		moc_dialog.o
 DIST          = /home/steve/Qt/5.15.2/gcc_64/mkspecs/features/spec_pre.prf \
 		/home/steve/Qt/5.15.2/gcc_64/mkspecs/common/unix.conf \
@@ -236,8 +236,8 @@ DIST          = /home/steve/Qt/5.15.2/gcc_64/mkspecs/features/spec_pre.prf \
 		/home/steve/Qt/5.15.2/gcc_64/mkspecs/features/lex.prf \
 		../qtportaudiopp/qtportaudiopp.pro ../../../portaudio/include/portaudio.h \
 		../../tdd/portaudioplusplus.h \
-		../qtportaudiopp/dialog.h ../qtportaudiopp/main.cpp \
-		../qtportaudiopp/dialog.cpp
+		../qtportaudiopp/dialog.h ../qtportaudiopp/dialog.cpp \
+		../qtportaudiopp/main.cpp
 QMAKE_TARGET  = qtportaudiopp
 DESTDIR       = 
 TARGET        = qtportaudiopp
@@ -622,7 +622,7 @@ distdir: FORCE
 	$(COPY_FILE) --parents $(DIST) $(DISTDIR)/
 	$(COPY_FILE) --parents /home/steve/Qt/5.15.2/gcc_64/mkspecs/features/data/dummy.cpp $(DISTDIR)/
 	$(COPY_FILE) --parents ../../../portaudio/include/portaudio.h ../../tdd/portaudioplusplus.h ../qtportaudiopp/dialog.h $(DISTDIR)/
-	$(COPY_FILE) --parents ../qtportaudiopp/main.cpp ../qtportaudiopp/dialog.cpp $(DISTDIR)/
+	$(COPY_FILE) --parents ../qtportaudiopp/dialog.cpp ../qtportaudiopp/main.cpp $(DISTDIR)/
 	$(COPY_FILE) --parents ../qtportaudiopp/dialog.ui $(DISTDIR)/
 
 
@@ -653,12 +653,14 @@ compiler_moc_predefs_make_all: moc_predefs.h
 compiler_moc_predefs_clean:
 	-$(DEL_FILE) moc_predefs.h
 moc_predefs.h: /home/steve/Qt/5.15.2/gcc_64/mkspecs/features/data/dummy.cpp
-	g++ -pipe -g -std=gnu++1z -Wall -Wextra -dM -E -o moc_predefs.h /home/steve/Qt/5.15.2/gcc_64/mkspecs/features/data/dummy.cpp
+	g++ -pipe -std=c++1z -Wall -Wpedantic -Wextra -g -std=gnu++1z -Wall -Wextra -dM -E -o moc_predefs.h /home/steve/Qt/5.15.2/gcc_64/mkspecs/features/data/dummy.cpp
 
 compiler_moc_header_make_all: moc_dialog.cpp
 compiler_moc_header_clean:
 	-$(DEL_FILE) moc_dialog.cpp
 moc_dialog.cpp: ../qtportaudiopp/dialog.h \
+		../../tdd/portaudioplusplus.h \
+		../../../portaudio/include/portaudio.h \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/QDialog \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/qdialog.h \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/qtwidgetsglobal.h \
@@ -763,8 +765,6 @@ moc_dialog.cpp: ../qtportaudiopp/dialog.h \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qfiledevice.h \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qvector2d.h \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qtouchdevice.h \
-		../../tdd/portaudioplusplus.h \
-		../../../portaudio/include/portaudio.h \
 		moc_predefs.h \
 		/home/steve/Qt/5.15.2/gcc_64/bin/moc
 	/home/steve/Qt/5.15.2/gcc_64/bin/moc $(DEFINES) --include /home/steve/Documents/portAudio++/portaudiopp/usingqt/build-qtportaudiopp-Desktop_Qt_5_15_2_GCC_64bit-Debug/moc_predefs.h -I/home/steve/Qt/5.15.2/gcc_64/mkspecs/linux-g++ -I/home/steve/Documents/portAudio++/portaudiopp/usingqt/qtportaudiopp -I/home/steve/Documents/portAudio++/portaudiopp/tdd -I/home/steve/Documents/portAudio++/portaudio/include -I/home/steve/Qt/5.15.2/gcc_64/include -I/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets -I/home/steve/Qt/5.15.2/gcc_64/include/QtGui -I/home/steve/Qt/5.15.2/gcc_64/include/QtCore -I. -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include ../qtportaudiopp/dialog.h -o moc_dialog.cpp
@@ -790,123 +790,9 @@ compiler_clean: compiler_moc_predefs_clean compiler_moc_header_clean compiler_ui
 
 ####### Compile
 
-main.o: ../qtportaudiopp/main.cpp ../qtportaudiopp/dialog.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/QDialog \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/qdialog.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/qtwidgetsglobal.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qtguiglobal.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qglobal.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qconfig-bootstrapped.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qconfig.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qtcore-config.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qsystemdetection.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qprocessordetection.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qcompilerdetection.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qtypeinfo.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qsysinfo.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qlogging.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qflags.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qatomic.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qbasicatomic.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qatomic_bootstrap.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qgenericatomic.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qatomic_cxx11.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qatomic_msvc.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qglobalstatic.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qmutex.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qnumeric.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qversiontagging.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qtgui-config.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/qtwidgets-config.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/qwidget.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qwindowdefs.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qobjectdefs.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qnamespace.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qobjectdefs_impl.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qwindowdefs_win.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qobject.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qstring.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qchar.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qbytearray.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qrefcount.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qarraydata.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qstringliteral.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qstringalgorithms.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qstringview.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qstringbuilder.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qlist.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qalgorithms.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qiterator.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qhashfunctions.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qpair.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qvector.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qcontainertools_impl.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qpoint.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qbytearraylist.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qstringlist.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qregexp.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qstringmatcher.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qcoreevent.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qscopedpointer.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qmetatype.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qvarlengtharray.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qcontainerfwd.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qobject_impl.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qmargins.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qpaintdevice.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qrect.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qsize.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qpalette.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qcolor.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qrgb.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qrgba64.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qbrush.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qmatrix.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qpolygon.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qregion.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qdatastream.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qiodevice.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qline.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qtransform.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qimage.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qpixelformat.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qpixmap.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qsharedpointer.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qshareddata.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qhash.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qsharedpointer_impl.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qfont.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qfontmetrics.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qfontinfo.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/qsizepolicy.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qcursor.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qkeysequence.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qevent.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qvariant.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qmap.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qdebug.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qtextstream.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qlocale.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qset.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qcontiguouscache.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qurl.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qurlquery.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qfile.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qfiledevice.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qvector2d.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qtouchdevice.h \
-		../../tdd/portaudioplusplus.h \
-		../../../portaudio/include/portaudio.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/QApplication \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/qapplication.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qcoreapplication.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qeventloop.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/qdesktopwidget.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qguiapplication.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qinputmethod.h
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o ../qtportaudiopp/main.cpp
-
 dialog.o: ../qtportaudiopp/dialog.cpp ../qtportaudiopp/dialog.h \
+		../../tdd/portaudioplusplus.h \
+		../../../portaudio/include/portaudio.h \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/QDialog \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/qdialog.h \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/qtwidgetsglobal.h \
@@ -1011,8 +897,6 @@ dialog.o: ../qtportaudiopp/dialog.cpp ../qtportaudiopp/dialog.h \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qfiledevice.h \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qvector2d.h \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qtouchdevice.h \
-		../../tdd/portaudioplusplus.h \
-		../../../portaudio/include/portaudio.h \
 		ui_dialog.h \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/QVariant \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/QApplication \
@@ -1038,11 +922,12 @@ dialog.o: ../qtportaudiopp/dialog.cpp ../qtportaudiopp/dialog.h \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/qrubberband.h \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/qframe.h \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qabstractitemmodel.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/QGridLayout \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/qgridlayout.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/QFrame \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/QHBoxLayout \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/qboxlayout.h \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/qlayout.h \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/qlayoutitem.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/qboxlayout.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/qgridlayout.h \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/QLabel \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/qlabel.h \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/QListWidget \
@@ -1054,14 +939,131 @@ dialog.o: ../qtportaudiopp/dialog.cpp ../qtportaudiopp/dialog.h \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/QPushButton \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/qpushbutton.h \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/qabstractbutton.h \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/QSpacerItem \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/QVBoxLayout \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/QWidget \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/QDateTime \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qdatetime.h \
 		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/QMessageBox \
-		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/qmessagebox.h
+		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/qmessagebox.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/QStandardPaths \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qstandardpaths.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o dialog.o ../qtportaudiopp/dialog.cpp
+
+main.o: ../qtportaudiopp/main.cpp ../qtportaudiopp/dialog.h \
+		../../tdd/portaudioplusplus.h \
+		../../../portaudio/include/portaudio.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/QDialog \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/qdialog.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/qtwidgetsglobal.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qtguiglobal.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qglobal.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qconfig-bootstrapped.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qconfig.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qtcore-config.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qsystemdetection.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qprocessordetection.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qcompilerdetection.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qtypeinfo.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qsysinfo.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qlogging.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qflags.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qatomic.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qbasicatomic.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qatomic_bootstrap.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qgenericatomic.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qatomic_cxx11.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qatomic_msvc.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qglobalstatic.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qmutex.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qnumeric.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qversiontagging.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qtgui-config.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/qtwidgets-config.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/qwidget.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qwindowdefs.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qobjectdefs.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qnamespace.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qobjectdefs_impl.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qwindowdefs_win.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qobject.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qstring.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qchar.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qbytearray.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qrefcount.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qarraydata.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qstringliteral.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qstringalgorithms.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qstringview.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qstringbuilder.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qlist.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qalgorithms.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qiterator.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qhashfunctions.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qpair.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qvector.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qcontainertools_impl.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qpoint.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qbytearraylist.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qstringlist.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qregexp.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qstringmatcher.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qcoreevent.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qscopedpointer.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qmetatype.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qvarlengtharray.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qcontainerfwd.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qobject_impl.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qmargins.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qpaintdevice.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qrect.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qsize.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qpalette.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qcolor.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qrgb.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qrgba64.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qbrush.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qmatrix.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qpolygon.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qregion.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qdatastream.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qiodevice.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qline.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qtransform.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qimage.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qpixelformat.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qpixmap.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qsharedpointer.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qshareddata.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qhash.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qsharedpointer_impl.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qfont.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qfontmetrics.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qfontinfo.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/qsizepolicy.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qcursor.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qkeysequence.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qevent.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qvariant.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qmap.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qdebug.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qtextstream.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qlocale.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qset.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qcontiguouscache.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qurl.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qurlquery.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qfile.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qfiledevice.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qvector2d.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qtouchdevice.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/QApplication \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/qapplication.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qcoreapplication.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtCore/qeventloop.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtWidgets/qdesktopwidget.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qguiapplication.h \
+		/home/steve/Qt/5.15.2/gcc_64/include/QtGui/qinputmethod.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o main.o ../qtportaudiopp/main.cpp
 
 moc_dialog.o: moc_dialog.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o moc_dialog.o moc_dialog.cpp
