@@ -43,11 +43,12 @@ void Dialog::Pasetup()
     ui->cboHostApi->clear();
     ui->cboInput->clear();
     ui->cboOutput->clear();
-    for (const auto& d : m_portaudio.enumerator().apis()){
-       ui->cboHostApi->addItem(d.info->name);
+    for (const auto &d : m_portaudio.enumerator().apis())
+    {
+        ui->cboHostApi->addItem(d.info.name);
     }
 
-    auto def_api_name = m_portaudio.enumerator().defaultHostApi().info->name;
+    auto def_api_name = m_portaudio.enumerator().defaultHostApi().info.name;
     auto def_api = m_portaudio.enumerator().findApi(def_api_name);
 
     ui->cboHostApi->setCurrentIndex(def_api->api_index);
@@ -133,7 +134,7 @@ void Dialog::on_cboOutput_currentIndexChanged(int index)
         this->Log("Output device index changed to: " + QString::number(index));
         auto api = m_portaudio.enumerator().findApi(this->m_hostApiIndex);
         auto dev = m_portaudio.enumerator().findDevice(this->m_hostApiIndex, index, portaudio::DeviceType::types::output);
-        Log("Output device has api: " + QString(api->info->name));
+        Log("Output device has api: " + QString(api->info.name));
         Log("Output device name: " + QString(dev->info->name));
         Log("Output device: " + channels_to_string(dev->info));
     }
@@ -148,7 +149,7 @@ void Dialog::on_cboInput_currentIndexChanged(int index)
         this->Log("Input device index changed to: " + QString::number(index));
         auto api = m_portaudio.enumerator().findApi(this->m_hostApiIndex);
         auto dev = m_portaudio.enumerator().findDevice(this->m_hostApiIndex, index, portaudio::DeviceType::types::input);
-        Log("Input device has api: " + QString(api->info->name));
+        Log("Input device has api: " + QString(api->info.name));
         Log("Input device name: " + QString(dev->info->name));
         Log("Input device: " + channels_to_string(dev->info));
     }
@@ -161,7 +162,7 @@ void Dialog::on_cboDuplex_currentIndexChanged(int index)
         this->Log("Duplex device index changed to: " + QString::number(index));
         auto api = m_portaudio.enumerator().findApi(this->m_hostApiIndex);
         auto dev = m_portaudio.enumerator().findDevice(this->m_hostApiIndex, index, portaudio::DeviceType::types::duplex);
-        Log("Duplex device has api: " + QString(api->info->name));
+        Log("Duplex device has api: " + QString(api->info.name));
         Log("Duplex device name: " + QString(dev->info->name));
         Log("Duplex device: " + channels_to_string(dev->info));
     }
@@ -250,9 +251,9 @@ void Dialog::on_btnTestInput_toggled(bool checked)
         portaudio::PaDeviceInfoEx mydevinstance(*dev);
 
         auto streamParams =
-            portaudio::streamParamsDefault(m_portaudio, &mydevinstance);
+            portaudio::makeStreamParams(m_portaudio, &mydevinstance);
 
-        auto mysetupInfo = portaudio::makeStreamSetupInfo(
+        mydevinstance.streamSetupInfo = portaudio::makeStreamSetupInfo(
             mydevinstance, &streamParams, nullptr);
 
         auto filepath =
@@ -275,10 +276,12 @@ void Dialog::on_btnTestInput_toggled(bool checked)
         try
         {
             auto rec_stream = m_portaudio.openStream(
-                mysetupInfo, [&](portaudio::CallbackInfo info) {
+                mydevinstance, [&](portaudio::CallbackInfo info) {
                     float *finput = (float *)info.input;
-                    size_t cb = sizeof(float) * mysetupInfo.inputChannelCount *
-                                info.frameCount;
+                    size_t cb =
+                        sizeof(float) *
+                        mydevinstance.streamSetupInfo.inputChannelCount *
+                        info.frameCount;
                     f.write((char *)finput, cb);
                     assert(f);
 
@@ -352,5 +355,47 @@ void Dialog::on_btnTestOutput_toggled(bool checked)
 
 void Dialog::on_btnTestDuplex_toggled(bool checked)
 {
+    if (checked)
+    {
+        if (m_duplexDeviceIndex < 0)
+        {
+            QMessageBox::critical(this, "Duplex Device Error",
+                                  "It appears no duplex device is selected.");
+            ui->btnTestDuplex->setChecked(false);
+            return;
+        }
+        const auto &api =
+            m_portaudio.enumerator().findApi(this->m_hostApiIndex);
+        const auto &device = api->duplexDevices().at(this->m_duplexDeviceIndex);
+        assert(device.deviceType.is_duplex());
+        Log("Preparing for duplex test (playing audio in and relaying to audio "
+            "out, for: " +
+            QString(device.info->name));
+        auto mydevice = device;
+        auto streamParams = portaudio::makeStreamParams(m_portaudio, &mydevice);
 
+        auto mysetupInfo = portaudio::makeStreamSetupInfo(
+            mydevice, &streamParams, &streamParams);
+
+        mydevice.streamSetupInfo = mysetupInfo;
+
+        try
+        {
+            auto stream =
+                m_portaudio.openStream(mydevice, [&](portaudio::CallbackInfo) {
+                    return portaudio::CallbackResult::Continue;
+                });
+        }
+        catch (const portaudio::Exception &e)
+        {
+            Log("Unexpected error when setting up duplex device: " +
+                QString(mydevice.info->name) + " " + QString(e.what()));
+        }
+    }
+    else
+    {
+        Log("Duplex test state toggled off");
+    }
+
+    ui->btnTestDuplex->setChecked(false);
 }

@@ -16,7 +16,7 @@ CC            = /Library/Developer/CommandLineTools/usr/bin/clang
 CXX           = /Library/Developer/CommandLineTools/usr/bin/clang++
 DEFINES       = -DQT_QML_DEBUG -DQT_WIDGETS_LIB -DQT_GUI_LIB -DQT_CORE_LIB
 CFLAGS        = -pipe -g $(EXPORT_ARCH_ARGS) -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk -mmacosx-version-min=10.13 -Wall -Wextra -fPIC $(DEFINES)
-CXXFLAGS      = -pipe -stdlib=libc++ -g -std=gnu++1z $(EXPORT_ARCH_ARGS) -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk -mmacosx-version-min=10.13 -Wall -Wextra -fPIC $(DEFINES)
+CXXFLAGS      = -pipe -stdlib=libc++ -Wall -Wpedantic -Wextra -g -std=gnu++1z $(EXPORT_ARCH_ARGS) -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk -mmacosx-version-min=10.13 -Wall -Wextra -fPIC $(DEFINES)
 INCPATH       = -I../qtportaudiopp -I. -I../../tdd -I../../../portaudio/include -I/Users/stevekerr/Qt/5.15.2/clang_64/lib/QtWidgets.framework/Headers -I/Users/stevekerr/Qt/5.15.2/clang_64/lib/QtGui.framework/Headers -I/Users/stevekerr/Qt/5.15.2/clang_64/lib/QtCore.framework/Headers -I. -I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/OpenGL.framework/Headers -I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/AGL.framework/Headers -I. -I/Users/stevekerr/Qt/5.15.2/clang_64/mkspecs/macx-clang -F/Users/stevekerr/Qt/5.15.2/clang_64/lib
 QMAKE         = /Users/stevekerr/Qt/5.15.2/clang_64/bin/qmake
 DEL_FILE      = rm -f
@@ -688,7 +688,7 @@ compiler_moc_predefs_make_all: moc_predefs.h
 compiler_moc_predefs_clean:
 	-$(DEL_FILE) moc_predefs.h
 moc_predefs.h: /Users/stevekerr/Qt/5.15.2/clang_64/mkspecs/features/data/dummy.cpp
-	/Library/Developer/CommandLineTools/usr/bin/clang++ -pipe -stdlib=libc++ -g -std=gnu++1z $(EXPORT_ARCH_ARGS) -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk -mmacosx-version-min=10.13 -Wall -Wextra -dM -E -o moc_predefs.h /Users/stevekerr/Qt/5.15.2/clang_64/mkspecs/features/data/dummy.cpp
+	/Library/Developer/CommandLineTools/usr/bin/clang++ -pipe -stdlib=libc++ -Wall -Wpedantic -Wextra -g -std=gnu++1z $(EXPORT_ARCH_ARGS) -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk -mmacosx-version-min=10.13 -Wall -Wextra -dM -E -o moc_predefs.h /Users/stevekerr/Qt/5.15.2/clang_64/mkspecs/features/data/dummy.cpp
 
 compiler_moc_header_make_all: moc_dialog.cpp
 compiler_moc_header_clean:
@@ -743,7 +743,9 @@ dialog.o: ../qtportaudiopp/dialog.cpp ../qtportaudiopp/dialog.h \
 		/Users/stevekerr/Qt/5.15.2/clang_64/lib/QtCore.framework/Headers/QDateTime \
 		/Users/stevekerr/Qt/5.15.2/clang_64/lib/QtCore.framework/Headers/qdatetime.h \
 		/Users/stevekerr/Qt/5.15.2/clang_64/lib/QtWidgets.framework/Headers/QMessageBox \
-		/Users/stevekerr/Qt/5.15.2/clang_64/lib/QtWidgets.framework/Headers/qmessagebox.h
+		/Users/stevekerr/Qt/5.15.2/clang_64/lib/QtWidgets.framework/Headers/qmessagebox.h \
+		/Users/stevekerr/Qt/5.15.2/clang_64/lib/QtCore.framework/Headers/QStandardPaths \
+		/Users/stevekerr/Qt/5.15.2/clang_64/lib/QtCore.framework/Headers/qstandardpaths.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o dialog.o ../qtportaudiopp/dialog.cpp
 
 moc_dialog.o: moc_dialog.cpp 

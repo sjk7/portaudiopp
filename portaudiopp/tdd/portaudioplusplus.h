@@ -331,7 +331,7 @@ struct enumerator_t;
 struct PaHostApiInfoEx
 {
     friend struct enumerator_t;
-    const PaHostApiInfo *info = nullptr;
+    const PaHostApiInfo info = {};
     int api_index = -1;
     int defaultInputDeviceGlobalApiIndex = INVALID_PA_DEVICE_INDEX;
     int defaultOutputDeviceGlobalApiIndex = INVALID_PA_DEVICE_INDEX;
@@ -357,11 +357,14 @@ struct PaHostApiInfoEx
         if (m_duplexDevices.empty()) return nullptr;
         return &m_duplexDevices.at(0);
     }
-    PaHostApiInfoEx(const PaHostApiInfo* info, int api_index): info(info), api_index(api_index) {
+    PaHostApiInfoEx(const PaHostApiInfo *info, int api_index)
+        : info(*info), api_index(api_index)
+    {
         defaultInputDeviceGlobalApiIndex = info->defaultInputDevice;
         defaultOutputDeviceGlobalApiIndex = info->defaultOutputDevice;
     }
-private:
+
+  private:
     deviceList m_inputDevices;
     deviceList m_outputDevices;
     deviceList m_allDevices;
@@ -408,7 +411,7 @@ static inline deviceList enum_devices()
         assert(d.hostApiInfo != nullptr);
         list.push_back(d);
         const auto &dback = list.at(list.size() - 1);
-        assert(d.hostApiInfo != nullptr);
+        assert(dback.hostApiInfo != nullptr);
     }
     return list;
 }
@@ -458,7 +461,8 @@ struct enumerator_t : detail::no_copy<enumerator_t>
             api_alldevs.clear();
             api_duplexdevs.clear();
 
-            for (int i = 0; i < api.info->deviceCount; ++i){
+            for (int i = 0; i < api.info.deviceCount; ++i)
+            {
 
                 const auto global_device_index = Pa_HostApiDeviceIndexToDeviceIndex(api.api_index, i);
                 auto&  dev_ref = m_devices.at(global_device_index); // NOT a copy
@@ -495,11 +499,8 @@ struct enumerator_t : detail::no_copy<enumerator_t>
                 assert(definput && defoutput);
                 api.m_DefaultInputDevice = *definput;
                 api.m_DefaultOutputDevice = *defoutput;
-
             };
-
         };
-
 
         for (const auto& a : m_apis){
             assert(a.defaultInputDevice()->api_device_index != INVALID_PA_DEVICE_INDEX);
@@ -540,7 +541,7 @@ struct enumerator_t : detail::no_copy<enumerator_t>
     const PaHostApiInfoEx* findApi(const std::string_view api_name) const noexcept {
         for(const auto& api : m_apis)
         {
-            std::string_view name{api.info->name};
+            std::string_view name{api.info.name};
             if(api_name == name){
                 return &api;
             }
@@ -774,15 +775,26 @@ class Stream : public detail::TimeStampGen, public detail::StreamBase
     }
     dsp::fader<float> m_fader;
 
-  public:
-    Stream(StreamSetupInfo &info, AUDIOCALLBACK &&cb) : m_info(info), m_cb(cb)
-    {
-        openSpecific(info);
-    }
-    Stream(AUDIOCALLBACK &&cb, std::string_view id = "") : m_cb(cb), m_sid(id)
+    // yes, this is meant to be private. I just use it for delegation
+    // so the object is fully constructed even if we are calling back from a
+    // public constructor.
+    Stream(AUDIOCALLBACK &&cb, StreamSetupInfo info, std::string_view id = "")
+        : m_info(info), m_cb(cb), m_sid(id)
     {
     }
 
+  public:
+    Stream(StreamSetupInfo &info, AUDIOCALLBACK &&cb)
+        : Stream(std::forward<AUDIOCALLBACK>(cb), info)
+    {
+        openSpecific(info);
+    }
+
+    Stream(PaDeviceInfoEx &dev, AUDIOCALLBACK &&cb)
+        : Stream(std::forward<AUDIOCALLBACK>(cb), dev.streamSetupInfo)
+    {
+        openSpecific(dev.streamSetupInfo);
+    }
     virtual ~Stream() { Close(); }
     Stream(const Stream &rhs) = delete;
     Stream &operator=(const Stream &rhs) = delete;
@@ -968,6 +980,7 @@ class Stream : public detail::TimeStampGen, public detail::StreamBase
     }
 
     std::string_view id() const noexcept { return m_sid; }
+    void id(std::string_view newId) { m_sid = newId; }
 
   private:
     AUDIOCALLBACK m_cb;
@@ -1012,7 +1025,7 @@ class Portaudio
 
     template <typename CALLBACK>
     auto openStream (portaudio::PaDeviceInfoEx& device, CALLBACK&& cb){
-        Stream s(std::forward<CALLBACK> (cb));
+        Stream s(device, std::forward<CALLBACK>(cb));
         if (device.streamSetupInfo.outParams && device.info->maxOutputChannels == 0){
             throw Exception(-1, "openStream: You are trying to *play* to an input-only device.");
         }
@@ -1020,14 +1033,6 @@ class Portaudio
              throw Exception(-1, "openStream: You are trying to *capture* to an output-only device.");
         }
         s.openSpecific(device.streamSetupInfo);
-        return s;
-    }
-
-    template <typename CALLBACK>
-    auto openStream(StreamSetupInfo &info, CALLBACK &&cb)
-    {
-        Stream<CALLBACK> s(std::forward<CALLBACK>(cb));
-        s.openSpecific(info);
         return s;
     }
 
@@ -1060,9 +1065,9 @@ class Portaudio
 };
 
 [[maybe_unused]] static inline auto
-streamParamsDefault(const Portaudio &pa, PaDeviceInfoEx *device = nullptr)
+makeStreamParams(const Portaudio &pa, PaDeviceInfoEx *device = nullptr)
 {
-    PaStreamParameters params = {0, 0, 0, 0, 0};
+    PaStreamParameters params = {};
 
     params.channelCount = 2;
     if (device == nullptr)
