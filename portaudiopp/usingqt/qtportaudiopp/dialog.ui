@@ -18,7 +18,7 @@
     <rect>
      <x>10</x>
      <y>22</y>
-     <width>821</width>
+     <width>837</width>
      <height>327</height>
     </rect>
    </property>
@@ -87,7 +87,20 @@
          </widget>
         </item>
         <item>
-         <widget class="QComboBox" name="cboInput"/>
+         <widget class="QComboBox" name="cboInput">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>200</width>
+            <height>0</height>
+           </size>
+          </property>
+         </widget>
         </item>
         <item>
          <widget class="QPushButton" name="btnTestInput">
@@ -110,6 +123,18 @@
         </item>
         <item>
          <widget class="Line" name="lineRecLevel">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>200</width>
+            <height>0</height>
+           </size>
+          </property>
           <property name="autoFillBackground">
            <bool>false</bool>
           </property>
@@ -117,10 +142,10 @@
            <enum>QFrame::Plain</enum>
           </property>
           <property name="lineWidth">
-           <number>50</number>
+           <number>100</number>
           </property>
           <property name="midLineWidth">
-           <number>50</number>
+           <number>100</number>
           </property>
           <property name="orientation">
            <enum>Qt::Horizontal</enum>

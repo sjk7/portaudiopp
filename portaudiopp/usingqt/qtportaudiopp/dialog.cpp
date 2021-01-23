@@ -6,6 +6,20 @@
 
 #include <fstream>
 
+Dialog::Dialog(QWidget *parent)
+    : QDialog(parent), ui(new Ui::Dialog), m_portaudio("QtTest")
+{
+    ui->setupUi(this);
+    this->setWindowTitle("Portaudio Devices Tester");
+}
+
+void Dialog::FirstShown()
+{
+
+    auto ln = ui->lineRecLevel;
+    ln->setMinimumWidth(ui->btnTestInput->width() / 2);
+    std::cout << ln->width();
+}
 void Dialog::reject()
 {
     m_WantQuit = m_portaudio.StreamsActive();
@@ -24,13 +38,6 @@ static auto inline FormatSeconds(float seconds) -> QString
     return QDateTime::fromMSecsSinceEpoch(seconds * 1000)
         .toUTC()
         .toString("hh:mm:ss:zzz");
-}
-
-Dialog::Dialog(QWidget *parent)
-    : QDialog(parent), ui(new Ui::Dialog), m_portaudio("QtTest")
-{
-    ui->setupUi(this);
-    this->setWindowTitle("Portaudio Devices Tester");
 }
 
 Dialog::~Dialog() { delete ui; }
@@ -287,6 +294,7 @@ void Dialog::on_btnTestInput_toggled(bool checked)
             auto streamParams =
                 portaudio::makeStreamParams(m_portaudio, &mydevinstance);
 
+            mydevinstance.deviceTypeSet(portaudio::DeviceType::types::input);
             mydevinstance.streamSetupInfo = portaudio::makeStreamSetupInfo(
                 mydevinstance, &streamParams, nullptr);
         }
@@ -324,7 +332,11 @@ void Dialog::on_btnTestInput_toggled(bool checked)
                 {
                     rec_stream.Start();
 
-                    Log("Recording to file: " + filepath + ": Started.");
+
+                    Log("Recording to file: " + filepath + ": Started. Recording at native samplerate: "
+                        + QString::number(mydevinstance.streamSetupInfo.samplerate) + " Hz, with "
++
+                        QString::number(mydevinstance.streamSetupInfo.inputChannelCount) + " channels");
                     Log("Hit the button again to stop it");
                     ui->listWidget->scrollToBottom();
                     ui->listWidget->item(ui->listWidget->count() - 1)
@@ -600,3 +612,5 @@ void Dialog::on_btnTestDuplex_toggled(bool checked)
     ui->btnTestDuplex->setText("Test Duplex");
     ui->btnTestDuplex->setEnabled(true);
 }
+
+// Recorder r(device, callback)

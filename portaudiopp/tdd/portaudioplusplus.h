@@ -7,18 +7,20 @@
 #include <atomic>
 #include <cassert>
 #define _USE_MATH_DEFINES
-#include <cmath> // std::abs
+#include <array>
+#include <cmath>   // std::abs
+#include <cstdint> // uint_64
 #include <cstring>
 #include <iostream>
 #include <limits> // numeric_limits
 #include <math.h>
 #include <memory> // unique_ptr
+#include <mutex>
 #include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
 #include <vector>
-#include <cstdint> // uint_64
 
 namespace portaudio
 {
@@ -141,6 +143,79 @@ template <typename T> class fader
     }
 
     bool active() const noexcept { return m_steps > 0; }
+};
+
+template <typename T> struct Atomic
+{
+    std::atomic<T> atomic;
+
+    Atomic() : atomic(T()) {}
+
+    explicit Atomic(T const &v) : atomic(v) {}
+    explicit Atomic(std::atomic<T> const &a) : atomic(a.load()) {}
+
+    Atomic(Atomic const &other) : atomic(other.atomic.load()) {}
+
+    Atomic &operator=(Atomic const &other)
+    {
+        atomic.store(other.atomic.load());
+        return *this;
+    }
+    Atomic &operator=(const T value)
+    {
+        atomic = value;
+        return *this;
+    }
+
+    operator T() { return atomic; }
+};
+
+typedef Atomic<double> AtomicDouble;
+
+template <int Channels = 2, typename Value = float> class EnvelopeFollower
+{
+    std::array<AtomicDouble, 2> m_env;
+
+  public:
+    EnvelopeFollower()
+    {
+        assert(m_env[0].atomic.is_lock_free());
+
+        for (int i = 0; i < Channels; i++)
+            m_env[i] = 0;
+    }
+
+    Value operator[](unsigned int channel) const { return m_env[channel]; }
+
+    void Setup(int sampleRate, double attackMs, double releaseMs)
+    {
+        m_a = pow(0.01, 1.0 / (attackMs * sampleRate * 0.001));
+        m_r = pow(0.01, 1.0 / (releaseMs * sampleRate * 0.001));
+    }
+
+    void Process(size_t samples, const Value **src)
+    {
+
+        for (int i = 0; i < Channels; i++)
+        {
+            const Value *cur = src[i];
+
+            double e = m_env[i];
+            for (int n = samples; n; n--)
+            {
+                double v = std::abs(*cur++);
+                if (v > e)
+                    e = m_a * (e - v) + v;
+                else
+                    e = m_r * (e - v) + v;
+            }
+            m_env[i] = e;
+        }
+    }
+
+  protected:
+    double m_a = 0;
+    double m_r = 0;
 };
 } // namespace dsp
 
@@ -791,10 +866,11 @@ struct StreamBase
 
 } // namespace detail
 
-template <typename AUDIOCALLBACK>
+template <typename AUDIOCALLBACK, typename SAMPLE = float, size_t NCH = 2>
 class Stream : public detail::TimeStampGen, public detail::StreamBase
 {
   private:
+    dsp::EnvelopeFollower<NCH, SAMPLE> m_env;
     StreamSetupInfo m_info;
     std::atomic<int> m_runstate{0};
     void setRunState(int newState) { m_runstate = newState; }
@@ -807,6 +883,9 @@ class Stream : public detail::TimeStampGen, public detail::StreamBase
     {
         Stream *p = (Stream *)userData;
         assert(p && "stream context not set. FATAL");
+        const SAMPLE *samples = (const SAMPLE *)input;
+        if (!samples) samples = (SAMPLE *)output;
+        p->m_env.Process(frameCount, &samples);
 
         const auto elapsed_time = p->generateTimeStamps(frameCount);
         const auto ret =
@@ -954,7 +1033,7 @@ class Stream : public detail::TimeStampGen, public detail::StreamBase
         m_info = info;
         m_info = actualStreamInfo();
         info = m_info; // so caller knows what he actually got
-
+        m_env.Setup(m_info.samplerate, 20, 500);
         TimeStampGen::reset(info.samplerate);
     }
 
@@ -1034,6 +1113,8 @@ class Stream : public detail::TimeStampGen, public detail::StreamBase
         }
     }
 
+    SAMPLE envelope(unsigned int channel) const { return this->m_env[channel]; }
+
     std::string_view id() const noexcept { return m_sid; }
     void id(std::string_view newId) { m_sid = newId; }
 
@@ -1045,13 +1126,14 @@ class Stream : public detail::TimeStampGen, public detail::StreamBase
 namespace detail{
 [[maybe_unused]]
 static inline void deviceSanityForOpenStream(PaDeviceInfoEx& device){
+
     if (device.streamSetupInfo.outParams.device == paNoDevice &&
         device.deviceType.is_output_only())
     {
         throw Exception(-1, "Output device: invalid argument (no internal device set for PortAudio)");
     }
     if (device.streamSetupInfo.inParams.device == paNoDevice &&
-        device.info->maxInputChannels != 0)
+        device.deviceType.is_input_only())
     {
         throw Exception(-1, "Input device: invalid argument (no internal device set for PortAudio)");
     }

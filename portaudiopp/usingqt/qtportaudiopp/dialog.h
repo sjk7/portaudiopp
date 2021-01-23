@@ -31,6 +31,7 @@ class Dialog : public QDialog
     void on_cboDuplex_currentIndexChanged(int index);
 
     void on_btnTestDuplex_toggled(bool checked);
+    void FirstShown();
 
   private:
     Ui::Dialog *ui;
@@ -43,6 +44,7 @@ class Dialog : public QDialog
         QWidget::showEvent(event);
         shown = true;
         Pasetup();
+        FirstShown();
     }
     void Pasetup();
     void Log(const QString &s);

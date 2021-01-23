@@ -60,7 +60,7 @@ public:
         Dialog->resize(856, 375);
         layoutWidget = new QWidget(Dialog);
         layoutWidget->setObjectName(QString::fromUtf8("layoutWidget"));
-        layoutWidget->setGeometry(QRect(10, 22, 821, 327));
+        layoutWidget->setGeometry(QRect(10, 22, 837, 327));
         verticalLayout_6 = new QVBoxLayout(layoutWidget);
         verticalLayout_6->setObjectName(QString::fromUtf8("verticalLayout_6"));
         verticalLayout_6->setContentsMargins(0, 0, 0, 0);
@@ -112,6 +112,12 @@ public:
 
         cboInput = new QComboBox(layoutWidget);
         cboInput->setObjectName(QString::fromUtf8("cboInput"));
+        QSizePolicy sizePolicy1(QSizePolicy::Fixed, QSizePolicy::Fixed);
+        sizePolicy1.setHorizontalStretch(0);
+        sizePolicy1.setVerticalStretch(0);
+        sizePolicy1.setHeightForWidth(cboInput->sizePolicy().hasHeightForWidth());
+        cboInput->setSizePolicy(sizePolicy1);
+        cboInput->setMinimumSize(QSize(200, 0));
 
         verticalLayout_2->addWidget(cboInput);
 
@@ -126,10 +132,13 @@ public:
 
         lineRecLevel = new QFrame(layoutWidget);
         lineRecLevel->setObjectName(QString::fromUtf8("lineRecLevel"));
+        sizePolicy1.setHeightForWidth(lineRecLevel->sizePolicy().hasHeightForWidth());
+        lineRecLevel->setSizePolicy(sizePolicy1);
+        lineRecLevel->setMinimumSize(QSize(200, 0));
         lineRecLevel->setAutoFillBackground(false);
         lineRecLevel->setFrameShadow(QFrame::Plain);
-        lineRecLevel->setLineWidth(50);
-        lineRecLevel->setMidLineWidth(50);
+        lineRecLevel->setLineWidth(100);
+        lineRecLevel->setMidLineWidth(100);
         lineRecLevel->setFrameShape(QFrame::HLine);
 
         verticalLayout_2->addWidget(lineRecLevel);
