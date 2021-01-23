@@ -1,5 +1,8 @@
+// This is an independent project of an individual developer. Dear PVS-Studio, please check it.
+
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
 /*
- * $Id$
+ * $Id: pa_asio.cpp 1890 2013-05-02 01:06:01Z rbencina $
  * Portable Audio I/O Library for ASIO Drivers
  *
  * Author: Stephane Letz
@@ -46,7 +49,7 @@
         08-20-01 More conversion, PA_StreamTime, Pa_GetHostError : Stephane Letz
         08-21-01 PaUInt8 bug correction, implementation of ASIOSTFloat32LSB and ASIOSTFloat32MSB native formats : Stephane Letz
         08-24-01 MAX_INT32_FP hack, another Uint8 fix : Stephane and Phil
-        08-27-01 Implementation of hostBufferSize < userBufferSize case, better management of the output buffer when
+        08-27-01 Implementation of hostBufferSize < userBufferSize case, better management of the ouput buffer when
                  the stream is stopped : Stephane Letz
         08-28-01 Check the stream pointer for null in bufferSwitchTimeInfo, correct bug in bufferSwitchTimeInfo when
                  the stream is stopped : Stephane Letz
@@ -55,11 +58,11 @@
         10-26-01 Management of hostBufferSize and userBufferSize of any size : Stephane Letz
         10-27-01 Improve calculus of hostBufferSize to be multiple or divisor of userBufferSize if possible : Stephane and Phil
         10-29-01 Change MAX_INT32_FP to (2147483520.0f) to prevent roundup to 0x80000000 : Phil Burk
-        10-31-01 Clear the output buffer and user buffers in PaHost_StartOutput, correct bug in GetFirstMultiple : Stephane Letz
+        10-31-01 Clear the ouput buffer and user buffers in PaHost_StartOutput, correct bug in GetFirstMultiple : Stephane Letz
         11-06-01 Rename functions : Stephane Letz
         11-08-01 New Pa_ASIO_Adaptor_Init function to init Callback adpatation variables, cleanup of Pa_ASIO_Callback_Input: Stephane Letz
         11-29-01 Break apart device loading to debug random failure in Pa_ASIO_QueryDeviceInfo ; Phil Burk
-        01-03-02 Deallocate all resources in PaHost_Term for cases where Pa_CloseStream is not called properly :  Stephane Letz
+        01-03-02 Desallocate all resources in PaHost_Term for cases where Pa_CloseStream is not called properly :  Stephane Letz
         02-01-02 Cleanup, test of multiple-stream opening : Stephane Letz
         19-02-02 New Pa_ASIO_loadDriver that calls CoInitialize on each thread on Windows : Stephane Letz
         09-04-02 Correct error code management in PaHost_Term, removes various compiler warning : Stephane Letz
@@ -69,7 +72,7 @@
         12-06-02 Rehashed into new multi-api infrastructure, added support for all ASIO sample formats : Ross Bencina
         18-06-02 Added pa_asio.h, PaAsio_GetAvailableLatencyValues() : Ross B.
         21-06-02 Added SelectHostBufferSize() which selects host buffer size based on user latency parameters : Ross Bencina
-        ** NOTE  maintenance history is now stored in CVS **
+        ** NOTE  maintanance history is now stored in CVS **
 */
 
 /** @file
@@ -84,6 +87,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
+#include <float.h> // DBL_EPSILON
 //#include <values.h>
 #include <new>
 
@@ -103,7 +107,7 @@
 
 #include "pa_win_coinitialize.h"
 
-/* This version of pa_asio.cpp is currently only targeted at Win32,
+/* This version of pa_asio.cpp is currently only targetted at Win32,
    It would require a few tweaks to work with pre-OS X Macintosh.
    To make configuration easier, we define WIN32 here to make sure
    that the ASIO SDK knows this is Win32.
@@ -1215,7 +1219,7 @@ PaError PaAsio_Initialize( PaUtilHostApiRepresentation **hostApi, PaHostApiIndex
     {
         asioHostApi->asioDrivers = new AsioDrivers(); /* invokes CoInitialize(0) in AsioDriverList::AsioDriverList */
     } 
-    catch (std::bad_alloc)
+    catch (std::bad_alloc&)
     {
         asioHostApi->asioDrivers = 0;
     }
@@ -1962,7 +1966,7 @@ static PaError ValidateAndSetSampleRate( double sampleRate )
     }
     PA_DEBUG(("ASIOGetSampleRate:%f\n",oldRate));
 
-    if (oldRate != sampleRate){
+    if (fabs(oldRate- sampleRate) > DBL_EPSILON){
         /* Set sample rate */
 
         PA_DEBUG(("before ASIOSetSampleRate(%f)\n",sampleRate));
@@ -2549,7 +2553,7 @@ static PaError OpenStream( struct PaUtilHostApiRepresentation *hostApi,
                enough to store at least two complete data blocks.
 
                1) Determine the amount of latency to be added to the
-                  preferred ASIO latency.
+                  prefered ASIO latency.
                2) Make sure we have at lest one additional latency frame.
                3) Divide the number of frames by the desired block size to
                   get the number (rounded up to pure integer) of blocks to
@@ -2568,7 +2572,7 @@ static PaError OpenStream( struct PaUtilHostApiRepresentation *hostApi,
             while( lBlockingBufferSize > (lBlockingBufferSizePow2<<=1) );
             lBlockingBufferSize = lBlockingBufferSizePow2;
 
-            /* Compute total input latency in seconds */
+            /* Compute total intput latency in seconds */
             stream->streamRepresentation.streamInfo.inputLatency =
                 (double)( PaUtil_GetBufferProcessorInputLatencyFrames(&stream->bufferProcessor               )
                         + PaUtil_GetBufferProcessorInputLatencyFrames(&stream->blockingState->bufferProcessor)
@@ -2635,7 +2639,7 @@ static PaError OpenStream( struct PaUtilHostApiRepresentation *hostApi,
                enough to store at least two complete data blocks.
 
                1) Determine the amount of latency to be added to the
-                  preferred ASIO latency.
+                  prefered ASIO latency.
                2) Make sure we have at lest one additional latency frame.
                3) Divide the number of frames by the desired block size to
                   get the number (rounded up to pure integer) of blocks to
@@ -2872,7 +2876,7 @@ static void bufferSwitch(long index, ASIOBool directProcess)
 //TAKEN FROM THE ASIO SDK
 
     // the actual processing callback.
-    // Beware that this is normally in a separate thread, hence be sure that
+    // Beware that this is normally in a seperate thread, hence be sure that
     // you take care about thread synchronization. This is omitted here for
     // simplicity.
 
@@ -2904,7 +2908,7 @@ static void bufferSwitch(long index, ASIOBool directProcess)
 static ASIOTime *bufferSwitchTimeInfo( ASIOTime *timeInfo, long index, ASIOBool directProcess )
 {
     // the actual processing callback.
-    // Beware that this is normally in a separate thread, hence be sure that
+    // Beware that this is normally in a seperate thread, hence be sure that
     // you take care about thread synchronization.
 
 
@@ -3269,7 +3273,7 @@ static long asioMessages(long selector, long value, void* message, double* opt)
             break;
 
         case kAsioSupportsTimeInfo:
-            // informs the driver whether the asioCallbacks.bufferSwitchTimeInfo() callback
+            // informs the driver wether the asioCallbacks.bufferSwitchTimeInfo() callback
             // is supported.
             // For compatibility with ASIO 1.0 drivers the host application should always support
             // the "old" bufferSwitch method, too.
@@ -3277,7 +3281,7 @@ static long asioMessages(long selector, long value, void* message, double* opt)
             break;
 
         case kAsioSupportsTimeCode:
-            // informs the driver whether application is interested in time code info.
+            // informs the driver wether application is interested in time code info.
             // If an application does not need to know about time code, the driver has less work
             // to do.
             ret = 0;
@@ -3423,7 +3427,7 @@ static PaError StopStream( PaStream *s )
             blockingState->stopFlag = TRUE;
 
             /* Wait until requested number of buffers has been freed. Time
-               out after twice the blocking i/o output buffer could have
+               out after twice the blocking i/o ouput buffer could have
                been consumed. */
             DWORD timeout = (DWORD)( 2 * blockingState->writeRingBuffer.bufferSize * 1000
                                        / stream->streamRepresentation.streamInfo.sampleRate );
@@ -3762,7 +3766,7 @@ static PaError WriteStream( PaStream      *s     ,
     unsigned int i; /* Just a counter. */
 
 
-    /* Check if the stream is still available ready to receive new data. */
+    /* Check if the stream ist still available ready to recieve new data. */
     if( blockingState->stopFlag || !stream->isActive )
     {
         PA_DEBUG(("Warning! Stream no longer available for writing in WriteStream()\n"));

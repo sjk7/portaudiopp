@@ -99,6 +99,9 @@ void Dialog::selectDefaultDevice(const portaudio::PaHostApiInfoEx *api,
     m_bpopping = true;
     auto idx = 0;
     const auto dup = api->defaultDuplexDevice();
+    if (!dup){
+        cbo->setCurrentIndex(-1); // no duplex devices found
+    }
     const int dup_index = dup ? dup->duplex_api_device_index : -1;
 
     if (cbo == ui->cboInput)
@@ -482,6 +485,7 @@ void Dialog::on_btnTestOutput_toggled(bool checked)
                             "device:\n" +
                             QString(mydevice.info->name) + " " +
                             QString(e.what()));
+                        err = true;
                     }
                 }
             }

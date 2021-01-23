@@ -6,6 +6,7 @@
 #include <algorithm> // std::max()
 #include <atomic>
 #include <cassert>
+#define _USE_MATH_DEFINES
 #include <cmath> // std::abs
 #include <cstring>
 #include <iostream>
@@ -17,6 +18,8 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include <cstdint> // uint_64
+
 namespace portaudio
 {
 
@@ -37,8 +40,8 @@ void make_string(std::ostringstream &stream, Args &&... args) noexcept
 
 namespace dsp
 {
-#ifdef MSC_VER
-#define PA_FORCE_INLINE __force_inline__
+#ifdef _MSC_VER
+#define PA_FORCE_INLINE __forceinline
 #else
 #define PA_FORCE_INLINE __attribute__((always_inline))
 #endif
@@ -48,7 +51,7 @@ static inline float next_sine_sample(unsigned int &sample_num,
 {
     if (sample_num >= samplerate) sample_num = 0;
 
-    return sin(freq * 2 * M_PI * sample_num++ / samplerate);
+    return (float)sin(freq * 2 * M_PI * sample_num++ / samplerate);
 }
 
 template <typename T> class fader
@@ -224,7 +227,7 @@ struct StreamSetupInfo
     int inputChannelCount = 2;
     int outputChannelCount = 2;
     PaSampleFormat sampleFormat = SampleFormat::Float32;
-    double samplerate = 44100;
+    unsigned int samplerate = 44100;
     unsigned long framesPerBuffer = 512;
     void *userData = {nullptr};
     PaStreamParameters inParams = {paNoDevice, -1, 0, -1, nullptr};
@@ -693,7 +696,7 @@ makeStreamSetupInfo(const PaDeviceInfoEx &devInfo, PaStreamParameters *inParams,
             -1, "Error: you must not set 'outParams' on an input device!");
     }
     if (samplerate == -1)
-        s.samplerate = devInfo.info->defaultSampleRate;
+        s.samplerate = (unsigned int)devInfo.info->defaultSampleRate;
     else
         s.samplerate = samplerate;
     s.sampleFormat = fmt;
@@ -742,15 +745,16 @@ class TimeStampGen
         rhs.m_Samplerate = 0;
     }
     int samplerate() const noexcept { return m_Samplerate; }
-    double elapsedMillis() const noexcept { return m_CurrentMillis; }
+    uint64_t elapsedMillis() const noexcept { return m_CurrentMillis; }
     uint64_t nframes() const noexcept { return m_nframes; }
     double elapsedSeconds() const noexcept
     {
-        return (double)elapsedMillis() / 1000.0;
+        auto ret = (double)elapsedMillis()/ 1000.0;
+        return ret;
     }
 
   protected:
-    void reset(const int newSamplerate)
+    void reset(const unsigned int newSamplerate)
     {
         assert(newSamplerate > 0);
         m_Samplerate = newSamplerate;
@@ -764,13 +768,14 @@ class TimeStampGen
 
         const auto frames_now = (m_nframes += frameCount);
         assert(m_Samplerate);
-        m_CurrentMillis = ((PaTime)frames_now / (PaTime)m_Samplerate) * 1000ULL;
+        const uint64_t samples_per_ms = m_Samplerate / 1000;
+        m_CurrentMillis = frames_now / samples_per_ms;
         return elapsedSeconds();
     }
 
   private:
     std::atomic<uint64_t> m_CurrentMillis = {0};
-    std::atomic<int> m_Samplerate = {0};
+    std::atomic<unsigned int> m_Samplerate = {0};
     std::atomic<uint64_t> m_nframes = {0};
 }; // TimeStampGen
 
@@ -876,7 +881,7 @@ class Stream : public detail::TimeStampGen, public detail::StreamBase
         StreamSetupInfo ret = m_info;
         ret.inputLatency = painfo->inputLatency;
         ret.outputLatency = painfo->outputLatency;
-        ret.samplerate = painfo->sampleRate;
+        ret.samplerate = (unsigned int)painfo->sampleRate;
 
         return ret;
     }
@@ -1037,7 +1042,30 @@ class Stream : public detail::TimeStampGen, public detail::StreamBase
     std::string m_sid;
 
 }; // namespace portaudio
+namespace detail{
+[[maybe_unused]]
+static inline void deviceSanityForOpenStream(PaDeviceInfoEx& device){
+    if (device.streamSetupInfo.outParams.device == paNoDevice &&
+        device.deviceType.is_output_only())
+    {
+        throw Exception(-1, "Output device: invalid argument (no internal device set for PortAudio)");
+    }
+    if (device.streamSetupInfo.inParams.device == paNoDevice &&
+        device.info->maxInputChannels != 0)
+    {
+        throw Exception(-1, "Input device: invalid argument (no internal device set for PortAudio)");
+    }
 
+    if (device.deviceType.is_duplex()){
+        if (device.streamSetupInfo.inParams.device == paNoDevice){
+            throw Exception(-1, "Duplex device requires both an input and output device to be set!. There is no device in 'inParams'");
+        }
+        if (device.streamSetupInfo.outParams.device == paNoDevice){
+            throw Exception(-1, "Duplex device requires both an input and output device to be set!. There is no device in 'outParams'");
+        }
+    }
+}
+}
 class Portaudio
 {
   public:
@@ -1075,19 +1103,8 @@ class Portaudio
     template <typename CALLBACK>
     auto openStream(portaudio::PaDeviceInfoEx &device, CALLBACK &&cb)
     {
+        detail::deviceSanityForOpenStream(device);
         Stream s(device, std::forward<CALLBACK>(cb));
-        if (device.streamSetupInfo.outParams.device == paNoDevice &&
-            device.info->maxOutputChannels == 0)
-        {
-            throw Exception(-1, "openStream: You are trying to *play* to an "
-                                "input-only device.");
-        }
-        if (device.streamSetupInfo.inParams.device == paNoDevice &&
-            device.info->maxInputChannels == 0)
-        {
-            throw Exception(-1, "openStream: You are trying to *capture* to an "
-                                "output-only device.");
-        }
         return s;
     }
 
