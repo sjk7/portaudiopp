@@ -22,6 +22,10 @@
 #include <string_view>
 #include <vector>
 
+//#ifdef _MSC_VER
+#include "../../../portaudio/include/pa_win_wasapi.h"
+//#endif
+
 namespace portaudio
 {
 
@@ -871,7 +875,7 @@ class Stream : public detail::TimeStampGen, public detail::StreamBase
 {
   private:
     dsp::EnvelopeFollower<NCH, SAMPLE> m_env;
-    StreamSetupInfo m_info;
+    PaDeviceInfoEx m_device = {};
     std::atomic<int> m_runstate{0};
     void setRunState(int newState) { m_runstate = newState; }
 
@@ -893,8 +897,9 @@ class Stream : public detail::TimeStampGen, public detail::StreamBase
                      statusFlags, userData, p->samplerate()});
         if (p->m_fader.active())
         {
-            p->m_fader.processSamples(frameCount, (float *)output,
-                                      p->m_info.outputChannelCount);
+            p->m_fader.processSamples(
+                frameCount, (float *)output,
+                p->m_device.streamSetupInfo.outputChannelCount);
         }
         if (ret != CallbackResult::Continue)
         {
@@ -910,33 +915,29 @@ class Stream : public detail::TimeStampGen, public detail::StreamBase
     // yes, this is meant to be private. I just use it for delegation
     // so the object is fully constructed even if we are calling back from a
     // public constructor.
-    Stream(AUDIOCALLBACK &&cb, StreamSetupInfo info, std::string_view id = "")
-        : m_info(info), m_cb(cb), m_sid(id)
+    Stream(AUDIOCALLBACK &&cb, PaDeviceInfoEx &device, std::string_view id = "")
+        : m_device(device), m_cb(cb), m_sid(id)
     {
     }
 
   public:
-    Stream(StreamSetupInfo &info, AUDIOCALLBACK &&cb)
-        : Stream(std::forward<AUDIOCALLBACK>(cb), info)
+    Stream(PaDeviceInfoEx &device, AUDIOCALLBACK &&cb)
+        : Stream(std::forward<AUDIOCALLBACK>(cb), device)
     {
-        openSpecific(info);
+        openSpecific(device);
     }
 
-    Stream(PaDeviceInfoEx &dev, AUDIOCALLBACK &&cb)
-        : Stream(std::forward<AUDIOCALLBACK>(cb), dev.streamSetupInfo)
-    {
-        openSpecific(dev.streamSetupInfo);
-    }
     virtual ~Stream() { Close(); }
     Stream(const Stream &rhs) = delete;
     Stream &operator=(const Stream &rhs) = delete;
 
     Stream(Stream &&rhs) : m_cb(std::move(rhs.m_cb))
     {
-        memcpy(&m_info, &rhs.m_info, sizeof(m_info));
+
+        m_device = std::move(rhs.m_device);
         m_sid = std::move(rhs.m_sid);
         rhs.Close();
-        openSpecific(m_info);
+        openSpecific(m_device);
     }
 
     Stream &&operator=(Stream &&rhs) = delete;
@@ -944,12 +945,12 @@ class Stream : public detail::TimeStampGen, public detail::StreamBase
 
     StreamSetupInfo actualStreamInfo()
     {
-        if (!m_info.stream)
+        auto stream = m_device.streamSetupInfo.stream;
+        if (!stream)
         {
             throw Exception(-1, "actualStreamInfo() may only be called if "
                                 "there is a valid and active stream");
         }
-        auto stream = m_info.stream;
         auto painfo = Pa_GetStreamInfo(stream);
         if (painfo == nullptr)
         {
@@ -957,7 +958,7 @@ class Stream : public detail::TimeStampGen, public detail::StreamBase
                                 "retrieve stream info");
         }
 
-        StreamSetupInfo ret = m_info;
+        StreamSetupInfo ret = m_device.streamSetupInfo;
         ret.inputLatency = painfo->inputLatency;
         ret.outputLatency = painfo->outputLatency;
         ret.samplerate = (unsigned int)painfo->sampleRate;
@@ -965,27 +966,9 @@ class Stream : public detail::TimeStampGen, public detail::StreamBase
         return ret;
     }
 
-    void openDefault()
+    void openSpecific(PaDeviceInfoEx &device)
     {
-        StreamSetupInfo info;
-
-        int err = Pa_OpenDefaultStream(
-            &info.stream, info.inputChannelCount, info.outputChannelCount,
-            info.sampleFormat, info.samplerate, info.framesPerBuffer,
-            callback_dispatcher, (void *)this);
-
-        if (err)
-        {
-            throw Exception(err, "Failed to openDefaultStream()");
-        }
-        m_info = info;
-        m_info = actualStreamInfo();
-
-        TimeStampGen::reset(info.samplerate);
-    }
-
-    void openSpecific(StreamSetupInfo &info)
-    {
+        auto &info = device.streamSetupInfo;
 
         if (info.inParams.device == paNoDevice &&
             info.outParams.device == paNoDevice)
@@ -1020,6 +1003,29 @@ class Stream : public detail::TimeStampGen, public detail::StreamBase
             devname = "[unexpected: no device]";
         }
 
+        /*/
+        #ifdef _WIN32
+                PaWasapiStreamInfo w = {};
+
+                if (device.hostApiInfo->type == PaHostApiTypeId::paWASAPI)
+                {
+
+                    // w.threadPriority = eThreadPriorityProAudio;
+                    // if (a->exclusive) {
+                    //     w.flags = (paWinWasapiExclusive |
+        paWinWasapiThreadPriority);
+                    //}
+
+                    w.hostApiType = paWASAPI;
+                    w.size = sizeof(PaWasapiStreamOption);
+                    w.version = 1;
+
+                    // info.inParam.hostApiSpecificStreamInfo = &w;
+                    // info.outParam.hostApiSpecificStreamInfo = &w;
+                }
+
+        #endif
+        /*/
         const auto err =
             Pa_OpenStream(&info.stream, myInParams, myOutParams,
                           info.samplerate, info.framesPerBuffer, info.flags,
@@ -1030,17 +1036,18 @@ class Stream : public detail::TimeStampGen, public detail::StreamBase
             throw Exception(
                 err, "Failed to openSpecificStream(), for device: ", devname);
         }
-        m_info = info;
-        m_info = actualStreamInfo();
-        info = m_info; // so caller knows what he actually got
-        m_env.Setup(m_info.samplerate, 20, 500);
+
+        m_device = device;
+        device.streamSetupInfo = actualStreamInfo();
+
+        m_env.Setup(device.streamSetupInfo.samplerate, 20, 500);
         TimeStampGen::reset(info.samplerate);
     }
 
     void Stop(float fadeOutSecs = 0.25)
     {
-        TimeStampGen::reset(m_info.samplerate);
-        if (!m_info.stream)
+        TimeStampGen::reset(m_device.streamSetupInfo.samplerate);
+        if (!m_device.streamSetupInfo.stream)
         {
             throw Exception(-1, "Stop(): unexpected: no stream to start");
         }
@@ -1061,7 +1068,7 @@ class Stream : public detail::TimeStampGen, public detail::StreamBase
             };
         }
 
-        int ret = Pa_StopStream(m_info.stream);
+        int ret = Pa_StopStream(m_device.streamSetupInfo.stream);
         if (ret && ret != paStreamIsStopped)
         {
             throw Exception(ret, "Error Stopping Stream");
@@ -1072,15 +1079,16 @@ class Stream : public detail::TimeStampGen, public detail::StreamBase
 
     void Start(float fadeInSecs = 0.1)
     {
-        TimeStampGen::reset(m_info.samplerate);
+        auto &info = m_device.streamSetupInfo;
+        TimeStampGen::reset(info.samplerate);
 
-        if (!m_info.stream)
+        if (!info.stream)
         {
             throw Exception(-1, "Start(): unexpected: no stream to start");
         }
 
         m_fader.arm(1.0f, (float)this->samplerate(), fadeInSecs);
-        int ret = Pa_StartStream(m_info.stream);
+        int ret = Pa_StartStream(info.stream);
         if (ret)
         {
             throw Exception(ret, "Error Starting Stream");
@@ -1090,16 +1098,18 @@ class Stream : public detail::TimeStampGen, public detail::StreamBase
 
     void Abort()
     {
-        if (m_info.stream)
+        auto &info = m_device.streamSetupInfo;
+        if (info.stream)
         {
-            Pa_AbortStream(m_info.stream);
-            m_info.stream = nullptr;
+            Pa_AbortStream(info.stream);
+            info.stream = nullptr;
         }
     }
 
     void Close()
     {
-        if (m_info.stream)
+        auto &info = m_device.streamSetupInfo;
+        if (info.stream)
         {
             try
             {
@@ -1108,8 +1118,8 @@ class Stream : public detail::TimeStampGen, public detail::StreamBase
             catch (...)
             {
             }
-            Pa_CloseStream(m_info.stream);
-            m_info.stream = nullptr;
+            Pa_CloseStream(info.stream);
+            info.stream = nullptr;
         }
     }
 
@@ -1190,11 +1200,11 @@ class Portaudio
         return s;
     }
 
-    auto openAndRunStream(StreamSetupInfo &info, AudioCallback &cb)
+    auto openAndRunStream(PaDeviceInfoEx &device, AudioCallback &cb)
     {
         std::atomic<CallbackResult> streamRetVal(CallbackResult::Continue);
 
-        Stream s(info, [&](CallbackInfo info) {
+        Stream s(device, [&](CallbackInfo info) {
             auto rv = cb.onCallback(info);
             if (rv != CallbackResult::Continue)
             {
